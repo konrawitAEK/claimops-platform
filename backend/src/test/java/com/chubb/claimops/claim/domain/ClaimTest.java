@@ -94,7 +94,8 @@ class ClaimTest {
         Claim claim = newClaim();
 
         assertThatThrownBy(() -> claim.settle("bob", new BigDecimal("1.00"), null, NOW))
-                .isInstanceOf(ForbiddenOperationException.class);
+                .isInstanceOf(InvalidStateTransitionException.class)
+                .hasMessageContaining("SUBMITTED to SETTLED");
     }
 
     @Test

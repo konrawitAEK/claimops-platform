@@ -153,12 +153,14 @@ public class Claim {
 
     /** A staff member takes ownership of a submitted claim and starts the review. */
     public void pickUp(String handler, Instant now) {
+        requireStatus(ClaimStatus.SUBMITTED, ClaimStatus.IN_REVIEW);
         transitionTo(ClaimStatus.IN_REVIEW, now);
         this.assignedHandler = handler;
     }
 
     /** The assigned handler asks the claimant for more information. The claim waits until it is answered. */
     public void requestInfo(String handler, String question, Instant now) {
+        requireCanMoveTo(ClaimStatus.INFO_REQUESTED);
         requireAssignedTo(handler);
         transitionTo(ClaimStatus.INFO_REQUESTED, now);
         infoRequests.add(new InfoRequest(this, question, handler, now));
@@ -166,6 +168,7 @@ public class Claim {
 
     /** The claimant answers the open information request, which returns the claim to review. */
     public void provideInfo(String claimant, String answer, Instant now) {
+        requireStatus(ClaimStatus.INFO_REQUESTED, ClaimStatus.IN_REVIEW);
         requireOwnedBy(claimant);
         InfoRequest open = openInfoRequest().orElseThrow(() ->
                 new InvalidStateTransitionException("Claim " + claimNumber + " has no open information request"));
@@ -180,6 +183,7 @@ public class Claim {
      * for would need a separate adjustment with its own approval, which is out of scope here.
      */
     public void settle(String handler, BigDecimal amount, String note, Instant now) {
+        requireCanMoveTo(ClaimStatus.SETTLED);
         requireAssignedTo(handler);
         if (amount.signum() <= 0) {
             throw new BusinessRuleViolationException("Settled amount must be greater than zero");
@@ -196,6 +200,7 @@ public class Claim {
 
     /** The assigned handler rejects the claim. A reason is required, because the claimant sees it. */
     public void reject(String handler, String reason, Instant now) {
+        requireCanMoveTo(ClaimStatus.REJECTED);
         requireAssignedTo(handler);
         transitionTo(ClaimStatus.REJECTED, now);
         this.decisionNote = reason;
@@ -210,11 +215,33 @@ public class Claim {
         return infoRequests.stream().filter(InfoRequest::isOpen).findFirst();
     }
 
-    private void transitionTo(ClaimStatus next, Instant now) {
+    /**
+     * Some operations share a target status but start from different places: pick-up and answering an
+     * information request both lead to IN_REVIEW. The transition table alone would let an officer "pick up" a claim
+     * that is waiting for the claimant and take it over from its handler. So each such operation also names the
+     * one status it starts from.
+     */
+    private void requireStatus(ClaimStatus expected, ClaimStatus next) {
+        if (status != expected) {
+            throw new InvalidStateTransitionException(
+                    "Claim " + claimNumber + " cannot move from " + status + " to " + next + " this way");
+        }
+    }
+
+    /**
+     * Checked before the actor rules, so an impossible move reports the status problem (409) rather than
+     * "not assigned" (403). For example, settling a SUBMITTED claim fails because it hasn't been reviewed,
+     * not because nobody is assigned yet.
+     */
+    private void requireCanMoveTo(ClaimStatus next) {
         if (!status.canTransitionTo(next)) {
             throw new InvalidStateTransitionException(
                     "Claim " + claimNumber + " cannot move from " + status + " to " + next);
         }
+    }
+
+    private void transitionTo(ClaimStatus next, Instant now) {
+        requireCanMoveTo(next);
         this.status = next;
         this.updatedAt = now;
     }

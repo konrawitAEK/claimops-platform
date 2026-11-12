@@ -13,13 +13,13 @@ import java.util.UUID;
 
 /**
  * A full claim with its information requests. {@code version} is the optimistic-lock version, which helps a
- * client tell whether the claim it's showing is stale.
+ * client tell whether the claim it's showing is stale. It is {@code null} only before the claim is first saved.
  */
 public record ClaimDetail(UUID id, String claimNumber, String claimantName, String policyNumber, ClaimType claimType,
                           Market market, Currency currency, LocalDate incidentDate, String incidentDescription,
                           BigDecimal claimedAmount, BigDecimal settledAmount, String decisionNote, ClaimStatus status,
                           String assignedHandler, Instant submittedAt, Instant updatedAt, Instant decidedAt,
-                          long version, List<InfoRequestView> infoRequests) {
+                          Long version, List<InfoRequestView> infoRequests) {
 
     public static ClaimDetail from(Claim claim) {
         return new ClaimDetail(claim.getId(), claim.getClaimNumber(), claim.getClaimantName(),
