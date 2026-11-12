@@ -6,13 +6,13 @@ import { MatCardModule } from '@angular/material/card';
 import { MatInputModule } from '@angular/material/input';
 import { Router } from '@angular/router';
 import { finalize } from 'rxjs';
-import { Alert } from '../../components/alert';
-import { StatusChip } from '../../components/status-chip';
+import { Alert } from '../../components/alert/alert';
+import { StatusChip } from '../../components/status-chip/status-chip';
 import { errorText, statusOf } from '../../core/api';
 import { dateTime, money } from '../../core/format';
 import type { ClaimDetail, ClaimSummary } from '../../models';
 import { ClaimantService } from '../../services/claimant.service';
-import { ClaimTimeline } from './claim-timeline';
+import { ClaimTimeline } from './components/claim-timeline/claim-timeline';
 
 const POLL_MS = 10_000;
 

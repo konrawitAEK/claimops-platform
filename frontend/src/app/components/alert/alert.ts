@@ -16,11 +16,7 @@ const ICONS: Record<Severity, string> = {
   imports: [MatIconModule],
   changeDetection: ChangeDetectionStrategy.OnPush,
   host: { role: 'alert', '[class]': '"sev-" + severity()' },
-  template: `
-    <mat-icon class="icon">{{ iconName() }}</mat-icon>
-    <div class="msg"><ng-content /></div>
-    <div class="action"><ng-content select="[alertAction]" /></div>
-  `,
+  templateUrl: './alert.html',
   styleUrl: './alert.scss',
 })
 export class Alert {

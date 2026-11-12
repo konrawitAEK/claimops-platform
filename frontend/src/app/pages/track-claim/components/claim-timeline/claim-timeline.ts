@@ -1,6 +1,6 @@
 import { ChangeDetectionStrategy, Component, computed, input } from '@angular/core';
-import { dateTime, money } from '../../core/format';
-import type { ClaimDetail } from '../../models';
+import { dateTime, money } from '../../../../core/format';
+import type { ClaimDetail } from '../../../../models';
 
 interface TimelineEntry {
   at: string | null;
@@ -18,21 +18,7 @@ interface TimelineEntry {
 @Component({
   selector: 'app-claim-timeline',
   changeDetection: ChangeDetectionStrategy.OnPush,
-  template: `
-    <ol class="timeline">
-      @for (entry of entries(); track $index) {
-        <li [class]="'t-' + entry.tone">
-          <div class="title">{{ entry.title }}</div>
-          @if (entry.at) {
-            <div class="caption">{{ when(entry.at) }}</div>
-          }
-          @if (entry.text) {
-            <div class="body2 text">{{ entry.text }}</div>
-          }
-        </li>
-      }
-    </ol>
-  `,
+  templateUrl: './claim-timeline.html',
   styleUrl: './claim-timeline.scss',
 })
 export class ClaimTimeline {

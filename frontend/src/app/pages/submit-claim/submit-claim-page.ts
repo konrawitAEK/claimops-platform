@@ -8,7 +8,7 @@ import { MatInputModule } from '@angular/material/input';
 import { MatSelectModule } from '@angular/material/select';
 import { RouterLink } from '@angular/router';
 import { finalize } from 'rxjs';
-import { Alert } from '../../components/alert';
+import { Alert } from '../../components/alert/alert';
 import { errorText } from '../../core/api';
 import { money } from '../../core/format';
 import { CLAIM_TYPES, DAMAGE_CATEGORIES, MARKETS, localCurrency } from '../../core/labels';

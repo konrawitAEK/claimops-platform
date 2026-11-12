@@ -1,12 +1,12 @@
 import { ChangeDetectionStrategy, Component, computed, input } from '@angular/core';
-import { STATUS_LABELS } from '../core/labels';
-import type { ClaimStatus } from '../models';
+import { STATUS_LABELS } from '../../core/labels';
+import type { ClaimStatus } from '../../models';
 
 /** Small coloured pill for a claim status. */
 @Component({
   selector: 'app-status-chip',
   changeDetection: ChangeDetectionStrategy.OnPush,
-  template: `<span class="chip" [class]="'s-' + status()">{{ label() }}</span>`,
+  templateUrl: './status-chip.html',
   styleUrl: './status-chip.scss',
 })
 export class StatusChip {

@@ -26,13 +26,15 @@ To reset all data, run `docker compose down -v`.
 
 The Angular 22 app (standalone components, signals, Angular Material) lives in `frontend/`:
 
+Every component is a folder holding `<name>.ts`, `<name>.html` and `<name>.scss`.
+
 | Folder | Contents |
 |---|---|
-| `components/` | Shared pieces: app layout with the role switcher, alert, status chip |
+| `components/` | Shared components, one folder each: `app-layout/` (with the role switcher), `alert/`, `status-chip/` |
 | `core/` | `identity.interceptor.ts` (adds `X-User-Role` / `X-User-Name`), `guards.ts` (`roleGuard`), API URL and error text, labels |
 | `models/` | One `*.model.ts` per area, mirroring the backend DTOs |
 | `services/` | `session`, `claimant` and `staff` API services |
-| `pages/` | One folder per page: `submit-claim`, `track-claim`, `staff-workspace` |
+| `pages/` | One folder per page: `submit-claim`, `track-claim`, `staff-workspace`. A page's own sub-components live in `pages/<page>/components/<name>/` |
 
 Calls go to the relative path `/api`. nginx (in Docker) or the dev-server proxy (`ng serve`) forwards them to the backend, so there is no CORS setup and no URL baked into the build. Running it outside Docker needs Node 22.22.3 or later: `cd frontend && npm install && npm start`.
 

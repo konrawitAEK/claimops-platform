@@ -149,6 +149,17 @@ Fill this in at the end. It's the table to bring to the walkthrough.
 - **Outcome:** _(candidate to fill)_
 - **My reasoning:** _(candidate to fill)_
 
+### 12:50: Separate HTML too, one folder per component
+- **Asked:** *"html ก็ต้องแยก แล้วสร้างเป็นไฟล์ components แล้วมีไฟล์ที่เป็นไฟล์เสริมเหล่านี้แยกเป็น folder ข้างในอีกที"* ("separate the HTML as well, make them component files, and put these supporting files in their own folder inside").
+- **AI proposed:**
+  - **One folder per component:** every component, the root `app` included, now has `<name>.ts`, `<name>.html` and `<name>.scss` in its own folder. No inline templates or styles remain.
+  - **Shared components** stay in `components/`: `alert/`, `status-chip/`, `app-layout/`.
+  - **Page-specific sub-components** moved to `pages/<page>/components/<name>/`: `claim-timeline` under track-claim; `claim-drawer`, `decision-dialog` and `exposure-cards` under staff-workspace.
+  - **Moves and imports:** files were moved with `git mv` so their history follows them, and relative imports were rewritten.
+  - The production build passes. Markup and styles are unchanged.
+- **Outcome:** _(candidate to fill)_
+- **My reasoning:** _(candidate to fill)_
+
 ---
 
 ## What I'd do with more time

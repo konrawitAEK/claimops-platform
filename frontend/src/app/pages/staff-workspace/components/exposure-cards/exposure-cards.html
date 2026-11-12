@@ -1,0 +1,27 @@
+<div class="cards">
+  @for (m of byMarket(); track m.code) {
+    <mat-card appearance="outlined" [class.empty]="!m.rows.length">
+      <div class="card-pad">
+        <div class="spread">
+          <span class="market">{{ m.code }}</span>
+          <span class="caption">{{ m.name }}</span>
+        </div>
+        @if (m.rows.length) {
+          <table class="data-table small">
+            <tbody>
+              @for (r of m.rows; track r.claimType + r.currency) {
+                <tr>
+                  <td>{{ r.claimType }}</td>
+                  <td class="right">{{ r.openClaims }} open</td>
+                  <td class="right num strong">{{ money(r.outstandingAmount, r.currency) }}</td>
+                </tr>
+              }
+            </tbody>
+          </table>
+        } @else {
+          <div class="caption none">No open exposure</div>
+        }
+      </div>
+    </mat-card>
+  }
+</div>
