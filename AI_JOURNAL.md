@@ -9,7 +9,8 @@ A running log of what I asked the AI, what I accepted, challenged or overrode, a
 
 | Start | End | Elapsed | Focus |
 |---|---|---|---|
-| | | | |
+| 11:17 | 11:57 | 0:40 | Before the formal timer: architecture design, then backend step 1 (API, Kafka, Docker). Timestamps from `docs/ai-prompts.jsonl`. |
+| 11:57 | | | Formal timer started |
 
 ## Key decisions at a glance
 
@@ -74,6 +75,34 @@ Fill this in at the end. It's the table to bring to the walkthrough.
   - **Lombok:** used `@Getter` and `@NoArgsConstructor(access = PROTECTED)` on the entities, but pushed back on `@Setter`. No setters existed, so it would remove no code. A public `setStatus` would also let callers bypass the state machine and the assignee check. The AI kept the getter for `infoRequests` hand-written so the list stays read-only.
   - **USD:** interpreted as "a claim may be filed in the market's local currency or in USD". Added a `Currency` enum and an optional `currency` field (defaulting to the local currency). Another market's currency returns 422. The exposure key became market + type + currency, so currencies are never summed together.
 - **Outcome:** _(candidate to fill: Accepted / Challenged / Overrode, depending on my answer about @Setter and the USD interpretation)_
+- **My reasoning:** _(candidate to fill)_
+
+### 11:59: Unit tests with no external dependencies (my spec), and Thai docs
+- **Asked:** JUnit 5 + Mockito tests covering:
+  - the state machine (valid and invalid transitions),
+  - a concurrent pickup mapping `OptimisticLockingFailureException` to 409,
+  - the idempotent Kafka consumer (exposure up on submit, down on settle or reject, duplicates ignored).
+  They had to run with `./mvnw test` and no external dependencies. I also asked for every `.md` file to be in Thai.
+- **AI proposed:**
+  - **Exhaustive state-machine test:** every operation from every status. **It caught a real bug.** `pickUp` checked only "can move to IN_REVIEW", and `INFO_REQUESTED → IN_REVIEW` is a legal edge, so a second officer could take over a claim that was waiting for the claimant. Fixed by giving each operation one source status.
+  - **Status before actor:** status rules are now checked before the assignee check, so settling a `SUBMITTED` claim returns 409 "SUBMITTED to SETTLED" rather than 403 "not assigned", as my spec expected.
+  - **Testing the consumer without a database:** extracted an `ExposureStore` port from `ExposureProjector`. The projection rules are tested against an in-memory store; the SQL lives in `JdbcExposureStore`.
+  - **Testing the 409 mapping:** a `@WebMvcTest` with the real interceptor and exception handler and a mocked service, so no database or Kafka is needed. Also fixed a null `version` in `ClaimDetail` that the service tests exposed.
+  - **Thai docs:** pushed back on translating the deliverables. The panel is APAC, so `README.md`, `ARCHITECTURE.md` and this journal stay in English. Thai versions were added as `README.th.md` and `docs/ARCHITECTURE.th.md`, with a list of likely panel questions.
+  - **Verified:** 63 tests pass without Docker. The rebuilt stack passes the smoke test.
+  - **Not covered by unit tests:** a real database race. The concurrent pickup was verified manually against Postgres. A Testcontainers integration test is still to do.
+- **Outcome:** _(candidate to fill: Accepted, or Overrode if I want the main docs in Thai)_
+- **My reasoning:** _(candidate to fill)_
+
+### 12:06: Cut the test suite to essentials
+- **Asked:** *"test case มีจำนวนเยอะเกินไปรึป่าว เหลือไว้เท่าที่จำเป็นสำคัญๆ ก่อน"* ("Aren't there too many test cases? Keep only the essential ones for now.")
+- **AI proposed:** Cut 63 tests to 15, keeping one test per rule that matters:
+  - **ClaimTest (7):** the valid lifecycle; settling a `SUBMITTED` claim fails; a `REJECTED` claim is final; a regression test for the takeover bug; only the assignee may decide; the settlement cap; the currency rule.
+  - **ClaimServiceTest (2):** a concurrent pickup loses with an optimistic-lock failure and publishes no event; submitting raises `CLAIM_SUBMITTED`.
+  - **StaffClaimControllerTest (2):** a lock failure maps to 409; a claimant calling a staff endpoint gets 403.
+  - **ExposureProjectorTest (4):** exposure up on submit, down on settle and on reject; a duplicate event is ignored.
+  - **Dropped:** the 25-case exhaustive state-machine matrix, which had already caught the takeover bug that the regression test now pins. Also dropped the separate transition-table test and the secondary 400/401, currency-summing and audit-only cases.
+- **Outcome:** _(candidate to fill)_
 - **My reasoning:** _(candidate to fill)_
 
 ---

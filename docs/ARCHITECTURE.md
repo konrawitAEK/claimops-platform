@@ -26,6 +26,7 @@ SUBMITTED ──▶ IN_REVIEW ──▶ SETTLED
 ```
 
 - **Transition table:** `ClaimStatus.allowedNext()` holds all the transitions in one place. `Claim` checks it before every change and has no setters, so no code path can skip it.
+- **One source status per operation:** pick-up only from `SUBMITTED`, and answering only from `INFO_REQUESTED`, even though both lead to `IN_REVIEW`. The table alone would let an officer take over a claim that is waiting for the claimant. An exhaustive state-machine test caught this; a regression test now covers it.
 - **Who may act:**
   - Any staff member can pick up a `SUBMITTED` claim, and becomes its assigned handler.
   - Only the assigned handler can request information, settle or reject.
@@ -59,6 +60,7 @@ Dependencies point one way only, from `exposure` to `claim`. The claim module kn
 - **Ordering:** each event's Kafka key is the claim id, so all events for one claim are consumed in order.
 - **Idempotent consumer:** each event id is inserted into `processed_events` in the same transaction as the read-model update. A replayed event is skipped (verified by re-producing an event).
 - **Atomic exposure updates:** exposure is updated with `INSERT … ON CONFLICT DO UPDATE`, so concurrent consumers can't lose an update.
+- **Testable projection rules:** `ExposureProjector` holds the rules; `ExposureStore` / `JdbcExposureStore` holds the SQL. The rules are unit-tested without a database.
 - **Retry policy:** a failing record is retried 3 times and then skipped. A dead-letter topic is the production follow-up.
 
 **Liability exposure** is the claimed amount of all open claims, broken down by market, claim type and currency. It is eventually consistent, typically a few milliseconds behind. The workload counts on the dashboard are read from the write model instead, so they are exact.
