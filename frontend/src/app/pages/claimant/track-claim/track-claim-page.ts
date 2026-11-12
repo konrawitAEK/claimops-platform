@@ -1,4 +1,4 @@
-import { ChangeDetectionStrategy, Component, DestroyRef, OnInit, inject, input, signal } from '@angular/core';
+import { ChangeDetectionStrategy, Component, DestroyRef, effect, inject, input, signal, untracked } from '@angular/core';
 import { KeyValuePipe } from '@angular/common';
 import { FormsModule } from '@angular/forms';
 import { MatButtonModule } from '@angular/material/button';
@@ -12,6 +12,7 @@ import { errorText, statusOf } from '../../../core/api';
 import { dateTime, money } from '../../../utils/format.util';
 import type { ClaimDetail, ClaimSummary } from '../../../models';
 import { ClaimantService } from '../../../services/claimant.service';
+import { SessionService } from '../../../services/session.service';
 import { humanizeKey } from '../../../utils/text.util';
 import { isDecided, openQuestion } from '../../../utils/claim.util';
 import { ClaimTimeline } from './components/claim-timeline/claim-timeline';
@@ -23,6 +24,9 @@ const POLL_MS = 10_000;
  *
  * The open claim is re-fetched every 10 s until it is decided, so a staff action shows up without a reload. Polling
  * was chosen over SSE or WebSockets to keep the time-boxed build simple.
+ *
+ * Switching claimant in the top bar clears the open claim, which belongs to the previous claimant, and reloads the
+ * list of "your claims".
  */
 @Component({
   selector: 'app-track-claim-page',
@@ -31,12 +35,14 @@ const POLL_MS = 10_000;
   templateUrl: './track-claim-page.html',
   styleUrl: './track-claim-page.scss',
 })
-export class TrackClaimPage implements OnInit {
+export class TrackClaimPage {
   /** ?number=CLM-… from the "Track it" link after submitting. */
   readonly number = input<string>();
 
   private readonly claims = inject(ClaimantService);
   private readonly router = inject(Router);
+  private readonly session = inject(SessionService);
+  private firstLoad = true;
 
   protected readonly money = money;
   protected readonly when = dateTime;
@@ -52,17 +58,33 @@ export class TrackClaimPage implements OnInit {
   protected readonly replyError = signal<string | null>(null);
 
   constructor() {
+    effect(() => {
+      const { role } = this.session.identity();
+      // A switch to the staff view navigates away; don't reset the URL and race that navigation.
+      if (role === 'CLAIMANT') untracked(() => this.onIdentity());
+    });
     const timer = setInterval(() => this.refresh(), POLL_MS);
     inject(DestroyRef).onDestroy(() => clearInterval(timer));
   }
 
-  ngOnInit(): void {
+  /** First run: open the claim from ?number=. Later runs (claimant switched): start clean for the new claimant. */
+  private onIdentity(): void {
     this.claims.myClaims().subscribe({ next: (list) => this.myClaims.set(list), error: () => this.myClaims.set([]) });
-    const initial = this.number();
-    if (initial) {
-      this.query = initial;
-      this.search();
+    if (this.firstLoad) {
+      this.firstLoad = false;
+      const initial = this.number();
+      if (initial) {
+        this.query = initial;
+        this.search();
+      }
+      return;
     }
+    this.claim.set(null);
+    this.error.set(null);
+    this.replyError.set(null);
+    this.query = '';
+    this.reply = '';
+    void this.router.navigate([], { queryParams: {}, replaceUrl: true });
   }
 
   protected search(): void {

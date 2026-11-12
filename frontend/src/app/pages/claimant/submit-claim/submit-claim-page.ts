@@ -1,4 +1,4 @@
-import { ChangeDetectionStrategy, Component, DestroyRef, inject, signal } from '@angular/core';
+import { ChangeDetectionStrategy, Component, DestroyRef, effect, inject, signal, untracked } from '@angular/core';
 import { takeUntilDestroyed, toSignal } from '@angular/core/rxjs-interop';
 import { FormGroup, NonNullableFormBuilder, ReactiveFormsModule, Validators, type FormControl } from '@angular/forms';
 import { MatButtonModule } from '@angular/material/button';
@@ -78,6 +78,22 @@ export class SubmitClaimPage {
   protected readonly error = signal<string | null>(null);
 
   constructor() {
+    // The top-bar market is the default for a new claim; follow it when it changes. A claimant switch also clears
+    // the previous claimant's confirmation.
+    let first = true;
+    effect(() => {
+      const { role, market } = this.session.identity();
+      if (role !== 'CLAIMANT') return;
+      untracked(() => {
+        if (first) {
+          first = false;
+          return;
+        }
+        this.form.controls.market.setValue(market);
+        this.submitted.set(null);
+        this.error.set(null);
+      });
+    });
     const destroyRef = inject(DestroyRef);
     // A new claim type brings a new set of required detail fields.
     this.form.controls.claimType.valueChanges

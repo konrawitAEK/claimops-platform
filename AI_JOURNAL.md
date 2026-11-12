@@ -174,6 +174,18 @@ Fill this in at the end. It's the table to bring to the walkthrough.
 - **Outcome:** _(candidate to fill. Challenged if I accept standalone routes files instead of NgModules)_
 - **My reasoning:** _(candidate to fill)_
 
+### 13:00: Auto-refresh when the top-bar identity changes (bug I found)
+- **Asked:** I sent a screenshot of the role switcher: *"ทุกครั้งที่ตรงนี้ถูกเปลี่ยนค่า ต้องรีเฟรชเอง auto"* ("every time this changes, I have to refresh by hand; make it automatic"). Changing the user or the market didn't update the page.
+- **AI proposed:**
+  - **Fix:** each page now reacts to `SessionService.identity()` with an Angular `effect()`, using `untracked()` so the signals read during the reload don't become dependencies and loop.
+    - **Staff workspace:** reloads the dashboard and queue, and the selected market becomes the queue filter. "Only mine" and the action buttons follow the new officer.
+    - **Track:** a claimant switch clears the open claim, which belonged to the previous claimant, and reloads "your claims".
+    - **Submit:** the form follows the selected market, and the previous claimant's confirmation is cleared.
+  - **Role guard on each effect:** each effect runs only while the role still matches its page. A role switch also navigates away, and without this the old page would call its API with the other role's headers, or reset the URL and race that navigation.
+- **Verified:** the build passes and the frontend is redeployed. **Not verified in a browser** (no browser tool in this session).
+- **Outcome:** _(candidate to fill)_
+- **My reasoning:** _(candidate to fill)_
+
 ---
 
 ## What I'd do with more time

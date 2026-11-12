@@ -1,4 +1,4 @@
-import { ChangeDetectionStrategy, Component, DestroyRef, OnInit, inject, signal } from '@angular/core';
+import { ChangeDetectionStrategy, Component, DestroyRef, effect, inject, signal, untracked } from '@angular/core';
 import { FormsModule } from '@angular/forms';
 import { MatButtonModule } from '@angular/material/button';
 import { MatCardModule } from '@angular/material/card';
@@ -27,6 +27,9 @@ const POLL_MS = 10_000;
  * Exposure comes from the Kafka-fed read model, so it can trail an action by a moment. The page re-fetches every 10 s
  * and right after each action. A 409 (someone else picked the claim up first, or its status moved on) is shown as a
  * warning and the queue is reloaded, so the officer sees the claim's real state instead of a generic error.
+ *
+ * Switching officer or market in the top bar reloads everything: "only mine" and the action buttons depend on who
+ * the officer is, and the market selection becomes the queue's market filter.
  */
 @Component({
   selector: 'app-staff-workspace-page',
@@ -45,7 +48,7 @@ const POLL_MS = 10_000;
   templateUrl: './staff-workspace-page.html',
   styleUrl: './staff-workspace-page.scss',
 })
-export class StaffWorkspacePage implements OnInit {
+export class StaffWorkspacePage {
   private readonly staff = inject(StaffService);
   private readonly dialog = inject(MatDialog);
   protected readonly session = inject(SessionService);
@@ -67,12 +70,20 @@ export class StaffWorkspacePage implements OnInit {
   protected mineOnly = false;
 
   constructor() {
+    // Runs once on load and again whenever the identity changes. untracked() keeps the signals read during the
+    // reload from becoming dependencies of this effect.
+    effect(() => {
+      const { role, market } = this.session.identity();
+      // A switch to the claimant view navigates away; don't call staff APIs with claimant headers meanwhile.
+      if (role !== 'STAFF') return;
+      untracked(() => {
+        this.marketFilter = market;
+        this.notice.set(null);
+        this.reload(true);
+      });
+    });
     const timer = setInterval(() => this.reload(false), POLL_MS);
     inject(DestroyRef).onDestroy(() => clearInterval(timer));
-  }
-
-  ngOnInit(): void {
-    this.reload(true);
   }
 
   protected reload(showProgress = true): void {
