@@ -36,8 +36,6 @@ The unit tests need no Docker, database or Kafka; JDK 21 is the only requirement
 | `StaffClaimControllerTest` (2, `@WebMvcTest`) | An optimistic-lock failure becomes **409** Problem Details. A claimant calling a staff endpoint gets 403. |
 | `ExposureProjectorTest` (4) | Exposure goes up on `CLAIM_SUBMITTED` and down on settle or reject. A redelivered `eventId` is ignored. |
 
-Thai versions of the docs, for my own preparation: [README.th.md](README.th.md) and [docs/ARCHITECTURE.th.md](docs/ARCHITECTURE.th.md).
-
 ## API
 
 Every `/api` request needs two headers:
