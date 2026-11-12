@@ -2,76 +2,93 @@
 
 Claims platform for Chubb APAC: claimants submit motor and property claims and track them; claims staff review, assess and settle or reject them.
 
-Status: **agreed design, not yet implemented.**
+Status: **backend implemented** (`backend/`). The Angular frontend hasn't been started yet.
+
+> The first design (see the 11:17 journal entry) was revised at the start of the build (11:32 entry): the `APPROVED` status was dropped, JWT was replaced by header-based identity, and the module and topic names changed. This document describes what is built.
 
 ## Domain
 
 | Entity | Purpose |
 |---|---|
-| **User** | Has one role: `CLAIMANT`, `HANDLER` (claims officer) or `MANAGER` (team view). |
-| **Policy** | Seeded reference data. Links a claim to its cover and limit. There is no policy management. |
-| **Claim** | Type (`MOTOR` / `PROPERTY`), market, incident date, description, claimed amount, assigned handler, status, and **reserve** (the estimated amount the company expects to pay). |
-| **InfoRequest** | A handler's question to the claimant and the claimant's answer. |
-| **ClaimEvent** | Append-only history of every change to a claim. It serves as the audit trail and as the Kafka event payload. |
+| **Claim** | The aggregate root. Holds type (`MOTOR` / `PROPERTY`), market, currency, incident date and description, claimed and settled amounts, assigned handler, status and an optimistic-lock `version`. |
+| **InfoRequest** | A handler's question to the claimant and the claimant's answer. It belongs to the Claim aggregate and changes only through it. |
+| **ClaimEvent** | Kafka payload (`chubb.claims.events`). It carries a snapshot, so consumers never read the claim tables. |
+
+**Markets and currencies:** SG, TH, MY, HK, AU and JP. A claim is filed in the market's local currency (the default) or in USD. Amounts are never converted between currencies.
 
 ### Claim lifecycle
 
 ```
-SUBMITTED ──▶ UNDER_REVIEW ──▶ APPROVED ──▶ SETTLED
-                 │   ▲   │
-                 ▼   │   └──▶ REJECTED
-              PENDING_INFO
+SUBMITTED ──▶ IN_REVIEW ──▶ SETTLED
+                │  ▲    └──▶ REJECTED
+                ▼  │
+           INFO_REQUESTED
 ```
 
-- A handler picks up a `SUBMITTED` claim, which moves it to `UNDER_REVIEW` with that handler assigned.
-- Asking the claimant for more information moves the claim to `PENDING_INFO`. The claimant's answer moves it back to `UNDER_REVIEW`.
-- `SETTLED` and `REJECTED` are terminal states.
+- **Transition table:** `ClaimStatus.allowedNext()` holds all the transitions in one place. `Claim` checks it before every change and has no setters, so no code path can skip it.
+- **Who may act:**
+  - Any staff member can pick up a `SUBMITTED` claim, and becomes its assigned handler.
+  - Only the assigned handler can request information, settle or reject.
+  - Only the claim's owner can answer an information request.
+- **Settlement:** the settled amount must be greater than 0 and no more than the claimed amount.
 
-**Outstanding liability exposure** is the sum of the reserves on all open claims (every status except `SETTLED` and `REJECTED`), broken down by market and claim type.
+## Backend: modular monolith
 
-## Backend
+One Spring Boot 3.5 service (Java 21) with three packages:
 
-There is one Spring Boot service (Java 21) with two internal modules:
+| Package | Responsibility |
+|---|---|
+| `claim` | Write model. REST API, state machine, JPA entities, and event publishing. |
+| `exposure` | Read models. A Kafka consumer maintains `liability_exposures` and `claim_audit_log`; the module also serves the staff dashboard. |
+| `common` | Header-based identity, Problem Details error mapping, Kafka and clock configuration. |
 
-- **claims** handles commands and queries over REST. It owns the claim tables and publishes a `ClaimEvent` for every state change.
-- **reporting** consumes the `claim-events` Kafka topic and builds read models: handler and team workload, outstanding exposure, and claimant notifications. It can also run automatic triage on a newly submitted claim.
+Dependencies point one way only, from `exposure` to `claim`. The claim module knows nothing about reporting.
 
 ### REST vs Kafka
 
 | Channel | Used for | Why |
 |---|---|---|
-| **REST** | Submit a claim, pick up, request info, respond, approve, reject, settle, and every read | The user needs an immediate result, such as a claim number on submit or a validation error. |
-| **Kafka** (`claim-events`) | Workload and exposure projections, notifications, triage | Side effects shouldn't slow down or fail the user's request. New consumers can be added without changing the command path. |
+| **REST** | Submit, pick up, request info, answer, settle, reject; every read | The user needs an immediate, consistent result, such as a claim number or a 409. |
+| **Kafka** `chubb.claims.events` | `CLAIM_SUBMITTED`, `CLAIM_STATUS_CHANGED`, `CLAIM_DECIDED` → exposure projection and audit trail | Side effects must not slow down or fail the officer's request. New consumers (notifications, fraud triage) can be added without touching the write path. |
 
-### Why one service, not two
+### Consistency and integrity
 
-Two deployable services would need two deploy pipelines, two databases, and handling of cross-service consistency, all within a 5-hour time box. Instead, the module boundary between claims and reporting is drawn explicitly, and the two modules already talk only through Kafka. To split reporting into its own service later, move that module out and give it its own database.
+- **Optimistic locking:** `Claim` has a `@Version` field. If two officers pick up the same claim at the same time, one succeeds and the other gets **409 Concurrent update**. This was verified against the running stack.
+- **Publishing after commit:** events are sent from a `@TransactionalEventListener(AFTER_COMMIT)`, so a rolled-back change never produces an event.
+  - **Known gap:** the commit and the send are not atomic. A transactional outbox would close the gap.
+- **Ordering:** each event's Kafka key is the claim id, so all events for one claim are consumed in order.
+- **Idempotent consumer:** each event id is inserted into `processed_events` in the same transaction as the read-model update. A replayed event is skipped (verified by re-producing an event).
+- **Atomic exposure updates:** exposure is updated with `INSERT … ON CONFLICT DO UPDATE`, so concurrent consumers can't lose an update.
+- **Retry policy:** a failing record is retried 3 times and then skipped. A dead-letter topic is the production follow-up.
+
+**Liability exposure** is the claimed amount of all open claims, broken down by market, claim type and currency. It is eventually consistent, typically a few milliseconds behind. The workload counts on the dashboard are read from the write model instead, so they are exact.
+
+### Identity (simplified)
+
+Each request identifies its caller with two headers:
+
+- `X-User-Role`: `CLAIMANT` or `STAFF`
+- `X-User-Name`: the user's name
+
+Role boundaries are enforced by path: `/api/claimant/**` is for claimants and `/api/staff/**` is for staff. A claimant who asks for someone else's claim gets 404, not 403, so the response doesn't reveal that the claim exists. Moving to OAuth2/JWT means replacing only `HeaderAuthInterceptor`.
 
 ### Stack
 
-- PostgreSQL, with Flyway for migrations
-- Kafka in KRaft mode, single node
-- Testcontainers for integration tests
-- Docker Compose: `docker compose up` starts everything
+- Java 21 and Spring Boot 3.5.16 (as specified; Spring Initializr now defaults to 4.x)
+- PostgreSQL 16, with Flyway for migrations
+- Kafka 3.9.1 in KRaft mode
+- Lombok `@Getter` on entities (no setters)
+- `docker compose up --build` starts everything
 
-## Contract
+## Frontend (not started)
 
-The design is contract-first. `contracts/openapi.yaml` is the source of truth: the backend implements it, and the Angular types are generated from it.
+One Angular app with lazy-loaded, role-guarded `claimant/` and `staff/` areas. Claim status will be refreshed by polling.
 
-## Frontend
+## Out of scope
 
-One Angular app serves both user types:
-
-- Lazy-loaded `claimant/` and `staff/` feature areas, each protected by a role-based route guard.
-- Claim status uses polling for now. Server-Sent Events (SSE) are the next step if time allows.
-
-## Priorities (5-hour cap)
-
-1. **Backend core** (about 2 hours): entities, state machine, REST, and tests for the state transitions.
-2. **Kafka** (about 1 hour): publish events; a consumer builds the workload and exposure projections.
-3. **Angular** (remaining time): claimant submit and track, and the staff work queue.
-
-**Out of scope:**
 - Document upload
-- Real authentication (seeded users with a simple JWT instead)
-- Multi-currency
+- Real authentication
+- FX conversion
+- A handler-set reserve: exposure uses the claimed amount instead
+- Transactional outbox
+- Dead-letter topic
