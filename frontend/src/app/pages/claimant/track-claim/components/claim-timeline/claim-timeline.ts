@@ -1,6 +1,6 @@
 import { ChangeDetectionStrategy, Component, computed, input } from '@angular/core';
-import { dateTime, money } from '../../core/format';
-import type { ClaimDetail } from '../../models';
+import { dateTime, money } from '../../../../../utils/format.util';
+import type { ClaimDetail } from '../../../../../models';
 
 interface TimelineEntry {
   at: string | null;
@@ -18,63 +18,8 @@ interface TimelineEntry {
 @Component({
   selector: 'app-claim-timeline',
   changeDetection: ChangeDetectionStrategy.OnPush,
-  template: `
-    <ol class="timeline">
-      @for (entry of entries(); track $index) {
-        <li [class]="'t-' + entry.tone">
-          <div class="title">{{ entry.title }}</div>
-          @if (entry.at) {
-            <div class="caption">{{ when(entry.at) }}</div>
-          }
-          @if (entry.text) {
-            <div class="body2 text">{{ entry.text }}</div>
-          }
-        </li>
-      }
-    </ol>
-  `,
-  styles: `
-    .timeline {
-      list-style: none;
-      margin: 0;
-      padding: 0 0 0 20px;
-      border-left: 2px solid var(--mat-sys-outline-variant);
-    }
-    li {
-      position: relative;
-      padding: 0 0 18px 12px;
-      --c: var(--co-info);
-    }
-    li::before {
-      content: '';
-      position: absolute;
-      left: -27px;
-      top: 4px;
-      width: 12px;
-      height: 12px;
-      border-radius: 50%;
-      background: var(--c);
-    }
-    .t-warning {
-      --c: var(--co-warning);
-    }
-    .t-success {
-      --c: var(--co-success);
-    }
-    .t-error {
-      --c: var(--co-error);
-    }
-    .t-muted {
-      --c: var(--co-muted);
-    }
-    .title {
-      font: var(--mat-sys-title-small);
-    }
-    .text {
-      white-space: pre-wrap;
-      margin-top: 4px;
-    }
-  `,
+  templateUrl: './claim-timeline.html',
+  styleUrl: './claim-timeline.scss',
 })
 export class ClaimTimeline {
   readonly claim = input.required<ClaimDetail>();

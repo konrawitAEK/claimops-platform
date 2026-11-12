@@ -2,7 +2,7 @@
 
 A running log of what I asked the AI, what I accepted, challenged or overrode, and why. Written as I worked; not polished.
 
-- **Tool:** Claude Code (model: _fill in_)
+- **Tool:** Claude Code (model: Claude Opus 5.5), with Claude in Chrome available but unused. Browser checks of the UI were not possible in this session.
 - **Raw prompt log:** `docs/ai-prompts.jsonl` is written automatically, one line per prompt with a timestamp
 
 ## Time log
@@ -11,6 +11,9 @@ A running log of what I asked the AI, what I accepted, challenged or overrode, a
 |---|---|---|---|
 | 11:17 | 11:57 | 0:40 | Before the formal timer: architecture design, then backend step 1 (API, Kafka, Docker). Timestamps from `docs/ai-prompts.jsonl`. |
 | 11:57 | | | Formal timer started |
+| 11:57 | 12:06 | 0:09 | Backend unit tests, trimmed to 15 essentials |
+| 12:06 | 13:22 | 1:16 | Angular frontend: structure, claim drawer, utils and routes, auto-refresh, exposure cards, policy auto-fill |
+| 13:22 | 13:35 | 0:13 | README run and reset commands, journal update |
 
 ## Key decisions at a glance
 
@@ -128,6 +131,103 @@ Fill this in at the end. It's the table to bring to the walkthrough.
   - Through the nginx proxy: submit with `incidentDetails` (unknown key dropped), track by number, another claimant's number gives 404, a missing detail gives 422, and JP exposure appears in JPY.
   - The 15 backend tests still pass.
 - **Not verified:** the UI has not been opened in a browser. The browser tool was unavailable in this session, so screens, the role switcher and the dialogs are unchecked by eye.
+- **Outcome:** _(candidate to fill)_
+- **My reasoning:** _(candidate to fill)_
+
+### 12:40: Claim detail drawer on /staff
+- **Asked:** *"หน้าของ /staff … ควรดูได้ว่ารายการนี้มีรายละเอียดอะไรบ้าง จะทำเป็น pop-up drawer ก็ได้ แต่ต้องทำเป็นไฟล์แยกไว้แล้วค่อยดึงมาใช้"* ("on /staff, officers should be able to see a claim's full details; a pop-up drawer is fine, but put it in its own file and import it").
+- **AI proposed:**
+  - **Component:** `claim-drawer.ts` in `pages/staff-workspace/`, next to `decision-dialog.ts`, opened through an `openClaimDrawer()` helper.
+  - **Built on MatDialog,** pinned to the right at full height, rather than a `mat-sidenav` in the page layout. This reuses the focus trap, Escape and backdrop, and keeps the page template unchanged.
+  - **Data loading:** the drawer loads the claim and its audit trail itself (`forkJoin`), so the queue passes only an id. Added `StaffService.audit()` for the existing `/audit` endpoint.
+  - **Contents:** facts, incident details, the Q&A thread, the decision note, and the audit trail. The audit trail comes from the Kafka read model and can lag a moment.
+  - **Opening it:** click a row or the new View button. The action buttons stop the click from reaching the row.
+- **Verified:** the production build passes, the container was redeployed, and the drawer's two calls return 200 through nginx (5 audit events). **Not verified in a browser** (no browser tool in this session).
+- **Outcome:** _(candidate to fill)_
+- **My reasoning:** _(candidate to fill)_
+
+### 12:47: Separate CSS from TypeScript
+- **Asked:** *"ควรแยก css ออกมาจาก ts"* ("CSS should be separated from the TS").
+- **AI proposed:** Moved the inline `styles` of all 7 components into a sibling `<name>.scss` referenced by `styleUrl`: alert, status-chip, app-layout, claim-timeline, exposure-cards, decision-dialog, claim-drawer. No rule changed. Templates stay inline in the small components, as in SwiftQuote; the pages already had separate `.html` and `.scss` files. The production build passes.
+- **Outcome:** _(candidate to fill)_
+- **My reasoning:** _(candidate to fill)_
+
+### 12:50: Separate HTML too, one folder per component
+- **Asked:** *"html ก็ต้องแยก แล้วสร้างเป็นไฟล์ components แล้วมีไฟล์ที่เป็นไฟล์เสริมเหล่านี้แยกเป็น folder ข้างในอีกที"* ("separate the HTML as well, make them component files, and put these supporting files in their own folder inside").
+- **AI proposed:**
+  - **One folder per component:** every component, the root `app` included, now has `<name>.ts`, `<name>.html` and `<name>.scss` in its own folder. No inline templates or styles remain.
+  - **Shared components** stay in `components/`: `alert/`, `status-chip/`, `app-layout/`.
+  - **Page-specific sub-components** moved to `pages/<page>/components/<name>/`: `claim-timeline` under track-claim; `claim-drawer`, `decision-dialog` and `exposure-cards` under staff-workspace.
+  - **Moves and imports:** files were moved with `git mv` so their history follows them, and relative imports were rewritten.
+  - The production build passes. Markup and styles are unchanged.
+- **Outcome:** _(candidate to fill)_
+- **My reasoning:** _(candidate to fill)_
+
+### 12:53: utils folder and per-feature routes
+- **Asked:** *"สร้างเป็น util.modele และสร้าง Routes ขึ้นมาด้วย"* ("make a util module, and create Routes too"). The AI asked what I meant. I chose a `utils/` folder, and pasted my usual pattern: a feature `NgModule` with its own routing module, `const routes: Routes = [...]`.
+- **AI proposed:**
+  - **Kept standalone components** rather than switching to `NgModule` declarations, because my spec asked for Angular v18+ standalone and that is Angular 22's default.
+  - **Copied the shape of my pattern:** each feature declares its own `const routes: Routes` in `pages/claimant/claimant.routes.ts` and `pages/staff/staff.routes.ts`. `app.routes.ts` loads them with `loadChildren` and keeps the `roleGuard` on the mount point.
+  - **Pages regrouped by feature:** `claimant/` holds submit-claim and track-claim; `staff/` holds staff-workspace. URLs are unchanged.
+  - **`utils/`:**
+    - `format.util.ts` (moved from `core/format.ts`)
+    - `text.util.ts` (`humanizeKey`, taken out of the drawer)
+    - `claim.util.ts` (`isDecided`, `openQuestion`, `describeAuditEntry`, taken out of the drawer and the track page)
+  - The production build passes, now with one lazy chunk per feature.
+- **Outcome:** _(candidate to fill. Challenged if I accept standalone routes files instead of NgModules)_
+- **My reasoning:** _(candidate to fill)_
+
+### 13:00: Auto-refresh when the top-bar identity changes (bug I found)
+- **Asked:** I sent a screenshot of the role switcher: *"ทุกครั้งที่ตรงนี้ถูกเปลี่ยนค่า ต้องรีเฟรชเอง auto"* ("every time this changes, I have to refresh by hand; make it automatic"). Changing the user or the market didn't update the page.
+- **AI proposed:**
+  - **Fix:** each page now reacts to `SessionService.identity()` with an Angular `effect()`, using `untracked()` so the signals read during the reload don't become dependencies and loop.
+    - **Staff workspace:** reloads the dashboard and queue, and the selected market becomes the queue filter. "Only mine" and the action buttons follow the new officer.
+    - **Track:** a claimant switch clears the open claim, which belonged to the previous claimant, and reloads "your claims".
+    - **Submit:** the form follows the selected market, and the previous claimant's confirmation is cleared.
+  - **Role guard on each effect:** each effect runs only while the role still matches its page. A role switch also navigates away, and without this the old page would call its API with the other role's headers, or reset the URL and race that navigation.
+- **Verified:** the build passes and the frontend is redeployed. **Not verified in a browser** (no browser tool in this session).
+- **Outcome:** _(candidate to fill)_
+- **My reasoning:** _(candidate to fill)_
+
+### 13:08: Show USD and settled amounts per market
+- **Asked:** *"Outstanding liability exposure ต้องการเห็นของ USD ด้วย และเพิ่มการแสดงผลของส่วนที่ settled ไปแล้วว่าแต่ละประเทศ settled ไปเท่าไหร่แล้ว"* ("show USD in the exposure too, and show how much each country has already settled").
+- **AI proposed:**
+  - **No backend change was needed.** The read model already carries settled amounts and USD rows. The cards filtered out rows with no open claims, so fully settled business was hidden.
+  - **Each market card:** shows the local currency **and USD**, each with Open / Outstanding / **Settled**. There is a row per claim type with activity, plus a total row that is always shown, even at zero.
+  - **New "USD · all markets" card** at the front. USD is one currency, so it can be totalled across the region. Local currencies stay per market because there is no FX conversion.
+- **Verified:** the build passes and the frontend is redeployed. The dashboard data now includes the settled-only SG rows (SGD 4,200 and USD 4,200) that were hidden before. **Not verified in a browser.**
+- **Outcome:** Overrode (see 13:15: I didn't want USD inside the market cards).
+- **My reasoning:** _(candidate to fill)_
+
+### 13:15: USD only in its own card
+- **Asked:** *"USD อยู่กับ card ตัวเอง ไม่ต้องไปอยู่กับ card สกุลเงินอื่น"* ("USD stays in its own card, not with the other currencies").
+- **AI proposed:**
+  - **USD card:** the only place USD appears. It now has a row per market with USD activity, plus the regional total.
+  - **Market cards:** show only their local currency, by claim type, with Open, Outstanding and Settled.
+  - **Code:** one shared `block()` helper builds both breakdowns (by claim type or by market). The build passes.
+- **Outcome:** _(candidate to fill)_
+- **My reasoning:** _(candidate to fill)_
+
+### 13:20: Policy number filled in for the claimant
+- **Asked:** *"policy number ควร run ขึ้นมาให้ลูกค้าเอง กันงง"* ("the policy number should be generated for the customer, to avoid confusion").
+- **AI proposed:**
+  - **Pushed back on a fresh number per claim.** A policy exists before the claim, and a claim only references it, so a new number every time would point to no policy at all.
+  - **Instead:** the field is filled automatically and read-only. `utils/policy.util.ts` derives the claimant's policy deterministically from claimant, market and claim type (e.g. `POL-SG-MOT-482915`): the same inputs always give the same policy. It updates when the type, market or claimant changes.
+  - **Labelled as a stand-in:** documented as a substitute for a policy administration lookup, which is out of scope.
+- **Verified:** the build passes and the frontend is redeployed. **Not verified in a browser.**
+- **Outcome:** _(candidate to fill)_
+- **My reasoning:** _(candidate to fill)_
+
+### 13:30: Run and reset commands in the README
+- **Asked:** *"เพิ่มคำสั่งสำหรับล้าง db และคำสั่งสำหรับ run ในจุดต่าง ๆ ลงใน Readme และอัพเดท AI_JOURNAL"* ("add commands to clear the DB and to run each part to the README, and update the AI journal").
+- **AI proposed:**
+  - **Run section rewritten:** everything in Docker; status, logs, rebuilding one service, and stopping.
+  - **Two ways to reset the database:**
+    - a `TRUNCATE` that clears all data and restarts claim numbers while the stack keeps running (dry-run in a rolled-back transaction before documenting it);
+    - a full `down -v` reset, needed after editing an existing migration.
+  - **Running parts on the host:** infrastructure only in Docker, the backend from the IDE, and the frontend dev server, each noting which container to stop first because of port clashes.
+  - **Inspect commands:** psql, and reading the Kafka topic. The frontend build commands went under Test.
+  - **Journal:** filled in the tool and model line and the time log so far.
 - **Outcome:** _(candidate to fill)_
 - **My reasoning:** _(candidate to fill)_
 

@@ -88,13 +88,14 @@ Role boundaries are enforced by path: `/api/claimant/**` is for claimants and `/
 One Angular 22 app (standalone components, signals, zoneless change detection, Angular Material) serves both user types.
 
 - **Identity:** a top-bar switcher picks the role, user and market. `identityInterceptor` sends the role and user as `X-User-Role` / `X-User-Name` on API calls only.
-- **Routes:** `roleGuard` protects `/claim/*` (claimant) and `/staff`. Each page is lazy-loaded.
+- **Routes:** each feature declares its own `const routes: Routes` in `pages/<feature>/<feature>.routes.ts`, loaded with `loadChildren`. `roleGuard` sits on the mount point: `/claim` for claimants, `/staff` for staff.
 - **Claimant pages:**
   - **Submit:** a reactive form whose detail fields switch with the claim type, plus a currency choice of local or USD.
   - **Track:** look a claim up by number. Shows a status chip and a timeline built from the claim, with a reply form only while the claim is `INFO_REQUESTED`.
 - **Staff workspace:** exposure cards per market, workload tiles, and a queue filtered by market, status and "only mine".
   - Pick Up / Request info / Settle / Reject are shown only when the action is legal for that claim.
   - A **409** is shown as a "changed by someone else" warning, and the queue reloads.
+  - Clicking a row opens a **claim drawer** (`pages/staff/staff-workspace/components/claim-drawer/`): full details, the Q&A thread, the decision and the audit trail.
 - **Freshness:** pages poll every 10 s. SSE is the upgrade path.
 - **Same origin:** the app calls `/api`. nginx proxies it to the backend, so no CORS setup is needed.
 

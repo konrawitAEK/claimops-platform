@@ -1,4 +1,4 @@
-import { ChangeDetectionStrategy, Component, DestroyRef, OnInit, inject, signal } from '@angular/core';
+import { ChangeDetectionStrategy, Component, DestroyRef, effect, inject, signal, untracked } from '@angular/core';
 import { FormsModule } from '@angular/forms';
 import { MatButtonModule } from '@angular/material/button';
 import { MatCardModule } from '@angular/material/card';
@@ -7,16 +7,17 @@ import { MatProgressBarModule } from '@angular/material/progress-bar';
 import { MatSelectModule } from '@angular/material/select';
 import { MatSlideToggleModule } from '@angular/material/slide-toggle';
 import { finalize, type Observable } from 'rxjs';
-import { Alert, type Severity } from '../../components/alert';
-import { StatusChip } from '../../components/status-chip';
-import { errorText, problemOf, statusOf } from '../../core/api';
-import { dateTime, money } from '../../core/format';
-import { MARKETS, STATUSES, STATUS_LABELS } from '../../core/labels';
-import type { ClaimDetail, ClaimStatus, ClaimSummary, Dashboard, Market } from '../../models';
-import { SessionService } from '../../services/session.service';
-import { StaffService } from '../../services/staff.service';
-import { DecisionDialog, type DecisionDialogData, type DecisionMode, type DecisionResult } from './decision-dialog';
-import { ExposureCards } from './exposure-cards';
+import { Alert, type Severity } from '../../../components/alert/alert';
+import { StatusChip } from '../../../components/status-chip/status-chip';
+import { errorText, problemOf, statusOf } from '../../../core/api';
+import { dateTime, money } from '../../../utils/format.util';
+import { MARKETS, STATUSES, STATUS_LABELS } from '../../../core/labels';
+import type { ClaimDetail, ClaimStatus, ClaimSummary, Dashboard, Market } from '../../../models';
+import { SessionService } from '../../../services/session.service';
+import { StaffService } from '../../../services/staff.service';
+import { openClaimDrawer } from './components/claim-drawer/claim-drawer';
+import { DecisionDialog, type DecisionDialogData, type DecisionMode, type DecisionResult } from './components/decision-dialog/decision-dialog';
+import { ExposureCards } from './components/exposure-cards/exposure-cards';
 
 const POLL_MS = 10_000;
 
@@ -26,6 +27,9 @@ const POLL_MS = 10_000;
  * Exposure comes from the Kafka-fed read model, so it can trail an action by a moment. The page re-fetches every 10 s
  * and right after each action. A 409 (someone else picked the claim up first, or its status moved on) is shown as a
  * warning and the queue is reloaded, so the officer sees the claim's real state instead of a generic error.
+ *
+ * Switching officer or market in the top bar reloads everything: "only mine" and the action buttons depend on who
+ * the officer is, and the market selection becomes the queue's market filter.
  */
 @Component({
   selector: 'app-staff-workspace-page',
@@ -44,7 +48,7 @@ const POLL_MS = 10_000;
   templateUrl: './staff-workspace-page.html',
   styleUrl: './staff-workspace-page.scss',
 })
-export class StaffWorkspacePage implements OnInit {
+export class StaffWorkspacePage {
   private readonly staff = inject(StaffService);
   private readonly dialog = inject(MatDialog);
   protected readonly session = inject(SessionService);
@@ -66,12 +70,20 @@ export class StaffWorkspacePage implements OnInit {
   protected mineOnly = false;
 
   constructor() {
+    // Runs once on load and again whenever the identity changes. untracked() keeps the signals read during the
+    // reload from becoming dependencies of this effect.
+    effect(() => {
+      const { role, market } = this.session.identity();
+      // A switch to the claimant view navigates away; don't call staff APIs with claimant headers meanwhile.
+      if (role !== 'STAFF') return;
+      untracked(() => {
+        this.marketFilter = market;
+        this.notice.set(null);
+        this.reload(true);
+      });
+    });
     const timer = setInterval(() => this.reload(false), POLL_MS);
     inject(DestroyRef).onDestroy(() => clearInterval(timer));
-  }
-
-  ngOnInit(): void {
-    this.reload(true);
   }
 
   protected reload(showProgress = true): void {
@@ -88,6 +100,11 @@ export class StaffWorkspacePage implements OnInit {
 
   protected isMine(claim: ClaimSummary): boolean {
     return claim.assignedHandler === this.session.identity().name;
+  }
+
+  /** Shows the claim's full details in the side drawer. */
+  protected view(claim: ClaimSummary): void {
+    openClaimDrawer(this.dialog, claim.id);
   }
 
   protected pickUp(claim: ClaimSummary): void {

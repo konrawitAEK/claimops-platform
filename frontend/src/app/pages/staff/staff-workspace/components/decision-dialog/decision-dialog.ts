@@ -3,8 +3,8 @@ import { NonNullableFormBuilder, ReactiveFormsModule, Validators } from '@angula
 import { MatButtonModule } from '@angular/material/button';
 import { MAT_DIALOG_DATA, MatDialogModule, MatDialogRef } from '@angular/material/dialog';
 import { MatInputModule } from '@angular/material/input';
-import { money } from '../../core/format';
-import type { ClaimSummary } from '../../models';
+import { money } from '../../../../../utils/format.util';
+import type { ClaimSummary } from '../../../../../models';
 
 export type DecisionMode = 'info' | 'settle' | 'reject';
 
@@ -30,44 +30,8 @@ const COPY: Record<DecisionMode, { title: string; label: string; action: string;
   selector: 'app-decision-dialog',
   imports: [ReactiveFormsModule, MatDialogModule, MatInputModule, MatButtonModule],
   changeDetection: ChangeDetectionStrategy.OnPush,
-  template: `
-    <h2 mat-dialog-title>{{ copy.title }} · {{ data.claim.claimNumber }}</h2>
-    <form [formGroup]="form" (ngSubmit)="confirm()">
-      <mat-dialog-content class="stack">
-        @if (data.mode === 'settle') {
-          <mat-form-field>
-            <mat-label>Settled amount ({{ data.claim.currency }})</mat-label>
-            <input matInput type="number" step="0.01" formControlName="amount" />
-            <mat-hint>Up to {{ money(data.claim.claimedAmount, data.claim.currency) }} claimed</mat-hint>
-          </mat-form-field>
-        }
-        <mat-form-field>
-          <mat-label>{{ copy.label }}</mat-label>
-          <textarea matInput rows="3" formControlName="text" maxlength="1000"></textarea>
-        </mat-form-field>
-      </mat-dialog-content>
-      <mat-dialog-actions align="end">
-        <button mat-button type="button" mat-dialog-close>Cancel</button>
-        <button
-          mat-flat-button
-          type="submit"
-          [class.danger]="data.mode === 'reject'"
-          [disabled]="form.invalid"
-        >
-          {{ copy.action }}
-        </button>
-      </mat-dialog-actions>
-    </form>
-  `,
-  styles: `
-    mat-dialog-content {
-      min-width: min(420px, 80vw);
-      padding-top: 8px !important;
-    }
-    .danger {
-      background: var(--co-error);
-    }
-  `,
+  templateUrl: './decision-dialog.html',
+  styleUrl: './decision-dialog.scss',
 })
 export class DecisionDialog {
   protected readonly data = inject<DecisionDialogData>(MAT_DIALOG_DATA);

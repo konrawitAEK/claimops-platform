@@ -50,6 +50,16 @@ export interface SubmitClaimRequest {
   claimedAmount: number;
 }
 
+/** One entry of the staff audit trail, built by the Kafka consumer (exposure/AuditEntryView). */
+export interface AuditEntry {
+  eventId: string;
+  eventType: 'CLAIM_SUBMITTED' | 'CLAIM_STATUS_CHANGED' | 'CLAIM_DECIDED';
+  previousStatus: ClaimStatus | null;
+  newStatus: ClaimStatus;
+  actor: string;
+  occurredAt: string;
+}
+
 export interface QueueFilter {
   market?: Market | null;
   status?: ClaimStatus | null;

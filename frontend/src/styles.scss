@@ -165,3 +165,8 @@ table.data-table {
   @include mat.form-field-density(-4);
 }
 
+
+// Right-hand drawer built on MatDialog (staff claim drawer): square inner edge, no rounded corners on the right.
+.side-drawer .mat-mdc-dialog-surface {
+  border-radius: 16px 0 0 16px;
+}
