@@ -12,9 +12,19 @@ export interface Exposure {
   updatedAt: string;
 }
 
+/** One officer's track record; avgHoursToDecision is null until they've decided a claim. */
+export interface HandlerPerformance {
+  handler: string;
+  openClaims: number;
+  settled: number;
+  rejected: number;
+  avgHoursToDecision: number | null;
+}
+
 export interface Workload {
   byStatus: Record<ClaimStatus, number>;
   openByHandler: { handler: string; openClaims: number }[];
+  performance: HandlerPerformance[];
 }
 
 export interface Dashboard {

@@ -46,10 +46,36 @@ public interface ClaimRepository extends JpaRepository<Claim, UUID> {
             """)
     List<HandlerCount> countOpenByHandler(@Param("statuses") Collection<ClaimStatus> statuses);
 
+    /**
+     * Decisions per officer: how many claims they settled and rejected, and the average hours from submission to
+     * decision. Native SQL because JPQL has no portable interval arithmetic; aliases are quoted so Postgres keeps
+     * their case for the projection.
+     */
+    @Query(value = """
+            SELECT assigned_handler AS "handler",
+                   count(*) FILTER (WHERE status = 'SETTLED') AS "settled",
+                   count(*) FILTER (WHERE status = 'REJECTED') AS "rejected",
+                   (avg(extract(epoch FROM decided_at - submitted_at)) / 3600)::float8 AS "avgHoursToDecision"
+            FROM claims
+            WHERE decided_at IS NOT NULL AND assigned_handler IS NOT NULL
+            GROUP BY assigned_handler
+            """, nativeQuery = true)
+    List<HandlerDecisions> decisionsByHandler();
+
     interface StatusCount {
         ClaimStatus getStatus();
 
         long getCount();
+    }
+
+    interface HandlerDecisions {
+        String getHandler();
+
+        long getSettled();
+
+        long getRejected();
+
+        double getAvgHoursToDecision();
     }
 
     interface HandlerCount {

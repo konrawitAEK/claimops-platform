@@ -13,6 +13,15 @@ export function money(amount: number | null | undefined, currency: Currency): st
   return f.format(amount);
 }
 
+/** Hours as a short duration: "< 1 min", "45 min", "3.5 h", "2.1 d". */
+export function duration(hours: number | null | undefined): string {
+  if (hours === null || hours === undefined) return '—';
+  if (hours < 1 / 60) return '< 1 min';
+  if (hours < 1) return `${Math.round(hours * 60)} min`;
+  if (hours < 48) return `${hours.toFixed(1)} h`;
+  return `${(hours / 24).toFixed(1)} d`;
+}
+
 export function dateTime(iso: string | null | undefined): string {
   return iso ? new Date(iso).toLocaleString('en-GB', { dateStyle: 'medium', timeStyle: 'short' }) : '—';
 }

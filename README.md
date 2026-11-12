@@ -19,6 +19,7 @@ docker compose up --build -d
 |---|---|
 | App (Angular) | http://localhost:4200. Use the top bar to switch between Claimant and Staff view, user and market. |
 | Backend | http://localhost:8080 (health check: `/actuator/health`) |
+| API docs | http://localhost:8080/swagger-ui.html (OpenAPI JSON at `/v3/api-docs`). Use "Authorize" to set the two identity headers. |
 | PostgreSQL | `localhost:5432`, database, user and password all `claimops` |
 | Kafka | `localhost:9092` from the host |
 
@@ -141,7 +142,7 @@ Errors are returned as RFC 9457 Problem Details.
 | POST | `/api/staff/claims/{id}/info-requests` | Assigned handler | Ask the claimant a question |
 | POST | `/api/staff/claims/{id}/settlement` | Assigned handler | Settle, for no more than the claimed amount |
 | POST | `/api/staff/claims/{id}/rejection` | Assigned handler | Reject, with a reason |
-| GET | `/api/staff/dashboard` | Staff | Liability exposure per market, type and currency, plus team workload |
+| GET | `/api/staff/dashboard` | Staff | Liability exposure per market, type and currency; team workload; per-officer performance (settled, rejected, average time to decision) |
 | GET | `/api/staff/claims/{id}/audit` | Staff | Audit trail built from Kafka events |
 
 ### Example
