@@ -2,7 +2,7 @@
 
 A running log of what I asked the AI, what I accepted, challenged or overrode, and why. Written as I worked; not polished.
 
-- **Tool:** Claude Code (model: _fill in_)
+- **Tool:** Claude Code (model: Claude Opus 5.5), with Claude in Chrome available but unused. Browser checks of the UI were not possible in this session.
 - **Raw prompt log:** `docs/ai-prompts.jsonl` is written automatically, one line per prompt with a timestamp
 
 ## Time log
@@ -11,6 +11,9 @@ A running log of what I asked the AI, what I accepted, challenged or overrode, a
 |---|---|---|---|
 | 11:17 | 11:57 | 0:40 | Before the formal timer: architecture design, then backend step 1 (API, Kafka, Docker). Timestamps from `docs/ai-prompts.jsonl`. |
 | 11:57 | | | Formal timer started |
+| 11:57 | 12:06 | 0:09 | Backend unit tests, trimmed to 15 essentials |
+| 12:06 | 13:22 | 1:16 | Angular frontend: structure, claim drawer, utils and routes, auto-refresh, exposure cards, policy auto-fill |
+| 13:22 | 13:35 | 0:13 | README run and reset commands, journal update |
 
 ## Key decisions at a glance
 
@@ -212,6 +215,19 @@ Fill this in at the end. It's the table to bring to the walkthrough.
   - **Instead:** the field is filled automatically and read-only. `utils/policy.util.ts` derives the claimant's policy deterministically from claimant, market and claim type (e.g. `POL-SG-MOT-482915`): the same inputs always give the same policy. It updates when the type, market or claimant changes.
   - **Labelled as a stand-in:** documented as a substitute for a policy administration lookup, which is out of scope.
 - **Verified:** the build passes and the frontend is redeployed. **Not verified in a browser.**
+- **Outcome:** _(candidate to fill)_
+- **My reasoning:** _(candidate to fill)_
+
+### 13:30: Run and reset commands in the README
+- **Asked:** *"เพิ่มคำสั่งสำหรับล้าง db และคำสั่งสำหรับ run ในจุดต่าง ๆ ลงใน Readme และอัพเดท AI_JOURNAL"* ("add commands to clear the DB and to run each part to the README, and update the AI journal").
+- **AI proposed:**
+  - **Run section rewritten:** everything in Docker; status, logs, rebuilding one service, and stopping.
+  - **Two ways to reset the database:**
+    - a `TRUNCATE` that clears all data and restarts claim numbers while the stack keeps running (dry-run in a rolled-back transaction before documenting it);
+    - a full `down -v` reset, needed after editing an existing migration.
+  - **Running parts on the host:** infrastructure only in Docker, the backend from the IDE, and the frontend dev server, each noting which container to stop first because of port clashes.
+  - **Inspect commands:** psql, and reading the Kafka topic. The frontend build commands went under Test.
+  - **Journal:** filled in the tool and model line and the time log so far.
 - **Outcome:** _(candidate to fill)_
 - **My reasoning:** _(candidate to fill)_
 

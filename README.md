@@ -7,10 +7,12 @@ APAC motor and property claims platform. Claimants submit and track claims; clai
 
 ## Run
 
-Requires Docker.
+Requires Docker. Run every command from the repository root unless it says `cd`.
+
+### Everything (recommended)
 
 ```bash
-docker compose up --build
+docker compose up --build -d
 ```
 
 | Service | Address |
@@ -20,7 +22,58 @@ docker compose up --build
 | PostgreSQL | `localhost:5432`, database, user and password all `claimops` |
 | Kafka | `localhost:9092` from the host |
 
-To reset all data, run `docker compose down -v`.
+| Task | Command |
+|---|---|
+| Status | `docker compose ps` |
+| Follow backend logs | `docker compose logs -f backend` |
+| Rebuild one service after a code change | `docker compose up -d --build backend` (or `frontend`) |
+| Stop, keeping data | `docker compose down` |
+
+### Reset the database
+
+**Clear all data, keep the stack running.** Claim numbers restart at 000001. Kafka keeps its old events, but the consumer has already passed them, so they are not replayed.
+
+```bash
+docker compose exec postgres psql -U claimops -c "TRUNCATE claims, info_requests, liability_exposures, claim_audit_log, processed_events; ALTER SEQUENCE claim_number_seq RESTART;"
+```
+
+**Full reset.** Deletes the Postgres volume, so Flyway migrates from scratch and Kafka starts empty. Use this after editing an existing migration file.
+
+```bash
+docker compose down -v && docker compose up --build -d
+```
+
+### Run parts on the host (for development)
+
+Start only the infrastructure in Docker:
+
+```bash
+docker compose up -d postgres kafka
+```
+
+**Backend from the host or IDE.** Needs JDK 21. It connects to `localhost:5432` and `localhost:9092` by default. If the backend container is running, stop it first with `docker compose stop backend`.
+
+```bash
+cd backend && ./mvnw spring-boot:run
+```
+
+**Frontend dev server** on http://localhost:4200, with `/api` proxied to `localhost:8080`. Needs Node 22.22.3 or later. If the frontend container is running, stop it first with `docker compose stop frontend`.
+
+```bash
+cd frontend && npm install && npm start
+```
+
+### Inspect
+
+```bash
+docker compose exec postgres psql -U claimops
+```
+
+Read every event on the topic:
+
+```bash
+docker compose exec kafka /opt/kafka/bin/kafka-console-consumer.sh --bootstrap-server localhost:9092 --topic chubb.claims.events --from-beginning
+```
 
 ## Frontend
 
@@ -37,7 +90,7 @@ Every component is a folder holding `<name>.ts`, `<name>.html` and `<name>.scss`
 | `services/` | `session`, `claimant` and `staff` API services |
 | `pages/` | One folder per feature, each with its own `<feature>.routes.ts`, lazy-loaded by `app.routes.ts`. `claimant/` holds `submit-claim/` and `track-claim/`; `staff/` holds `staff-workspace/`. A page's own sub-components live in `<page>/components/<name>/` |
 
-Calls go to the relative path `/api`. nginx (in Docker) or the dev-server proxy (`ng serve`) forwards them to the backend, so there is no CORS setup and no URL baked into the build. Running it outside Docker needs Node 22.22.3 or later: `cd frontend && npm install && npm start`.
+Calls go to the relative path `/api`. nginx (in Docker) or the dev-server proxy (`ng serve`) forwards them to the backend, so there is no CORS setup and no URL baked into the build. To run it outside Docker, see *Run parts on the host*.
 
 ## Test
 
@@ -45,7 +98,19 @@ Calls go to the relative path `/api`. nginx (in Docker) or the dev-server proxy 
 cd backend && ./mvnw test
 ```
 
-The unit tests need no Docker, database or Kafka; JDK 21 is the only requirement. They cover:
+Frontend type check and production build (Node 22.22.3 or later):
+
+```bash
+cd frontend && npm run build
+```
+
+Or, without a local Node, the same build in a container:
+
+```bash
+docker run --rm -v "$PWD/frontend":/app -w /app node:22.23-alpine sh -c "npm ci && npm run build"
+```
+
+The backend unit tests need no Docker, database or Kafka; JDK 21 is the only requirement. They cover:
 
 | Test | What it proves |
 |---|---|
