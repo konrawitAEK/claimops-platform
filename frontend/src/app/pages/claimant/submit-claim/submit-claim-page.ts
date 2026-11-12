@@ -8,13 +8,13 @@ import { MatInputModule } from '@angular/material/input';
 import { MatSelectModule } from '@angular/material/select';
 import { RouterLink } from '@angular/router';
 import { finalize } from 'rxjs';
-import { Alert } from '../../components/alert/alert';
-import { errorText } from '../../core/api';
-import { money } from '../../core/format';
-import { CLAIM_TYPES, DAMAGE_CATEGORIES, MARKETS, localCurrency } from '../../core/labels';
-import type { ClaimDetail, ClaimType, Currency, Market } from '../../models';
-import { ClaimantService } from '../../services/claimant.service';
-import { SessionService } from '../../services/session.service';
+import { Alert } from '../../../components/alert/alert';
+import { errorText } from '../../../core/api';
+import { money } from '../../../utils/format.util';
+import { CLAIM_TYPES, DAMAGE_CATEGORIES, MARKETS, localCurrency } from '../../../core/labels';
+import type { ClaimDetail, ClaimType, Currency, Market } from '../../../models';
+import { ClaimantService } from '../../../services/claimant.service';
+import { SessionService } from '../../../services/session.service';
 
 type DetailsGroup = FormGroup<Record<string, FormControl<string>>>;
 

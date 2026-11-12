@@ -39,7 +39,7 @@
           <dt>Claimed</dt>
           <dd class="num">{{ money(c.claimedAmount, c.currency) }}</dd>
           @for (d of c.incidentDetails | keyvalue; track d.key) {
-            <dt>{{ d.key }}</dt>
+            <dt>{{ labelFor(d.key) }}</dt>
             <dd>{{ d.value }}</dd>
           }
           <dt>Last update</dt>

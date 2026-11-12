@@ -1,6 +1,6 @@
 import { ChangeDetectionStrategy, Component, computed, input } from '@angular/core';
-import { dateTime, money } from '../../../../core/format';
-import type { ClaimDetail } from '../../../../models';
+import { dateTime, money } from '../../../../../utils/format.util';
+import type { ClaimDetail } from '../../../../../models';
 
 interface TimelineEntry {
   at: string | null;

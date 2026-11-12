@@ -32,9 +32,10 @@ Every component is a folder holding `<name>.ts`, `<name>.html` and `<name>.scss`
 |---|---|
 | `components/` | Shared components, one folder each: `app-layout/` (with the role switcher), `alert/`, `status-chip/` |
 | `core/` | `identity.interceptor.ts` (adds `X-User-Role` / `X-User-Name`), `guards.ts` (`roleGuard`), API URL and error text, labels |
+| `utils/` | Pure helper functions: `format.util.ts` (money, dates), `text.util.ts`, `claim.util.ts` |
 | `models/` | One `*.model.ts` per area, mirroring the backend DTOs |
 | `services/` | `session`, `claimant` and `staff` API services |
-| `pages/` | One folder per page: `submit-claim`, `track-claim`, `staff-workspace`. A page's own sub-components live in `pages/<page>/components/<name>/` |
+| `pages/` | One folder per feature, each with its own `<feature>.routes.ts`, lazy-loaded by `app.routes.ts`. `claimant/` holds `submit-claim/` and `track-claim/`; `staff/` holds `staff-workspace/`. A page's own sub-components live in `<page>/components/<name>/` |
 
 Calls go to the relative path `/api`. nginx (in Docker) or the dev-server proxy (`ng serve`) forwards them to the backend, so there is no CORS setup and no URL baked into the build. Running it outside Docker needs Node 22.22.3 or later: `cd frontend && npm install && npm start`.
 

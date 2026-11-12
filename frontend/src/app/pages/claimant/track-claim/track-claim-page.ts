@@ -6,12 +6,14 @@ import { MatCardModule } from '@angular/material/card';
 import { MatInputModule } from '@angular/material/input';
 import { Router } from '@angular/router';
 import { finalize } from 'rxjs';
-import { Alert } from '../../components/alert/alert';
-import { StatusChip } from '../../components/status-chip/status-chip';
-import { errorText, statusOf } from '../../core/api';
-import { dateTime, money } from '../../core/format';
-import type { ClaimDetail, ClaimSummary } from '../../models';
-import { ClaimantService } from '../../services/claimant.service';
+import { Alert } from '../../../components/alert/alert';
+import { StatusChip } from '../../../components/status-chip/status-chip';
+import { errorText, statusOf } from '../../../core/api';
+import { dateTime, money } from '../../../utils/format.util';
+import type { ClaimDetail, ClaimSummary } from '../../../models';
+import { ClaimantService } from '../../../services/claimant.service';
+import { humanizeKey } from '../../../utils/text.util';
+import { isDecided, openQuestion } from '../../../utils/claim.util';
 import { ClaimTimeline } from './components/claim-timeline/claim-timeline';
 
 const POLL_MS = 10_000;
@@ -38,6 +40,8 @@ export class TrackClaimPage implements OnInit {
 
   protected readonly money = money;
   protected readonly when = dateTime;
+  protected readonly openQuestion = openQuestion;
+  protected readonly labelFor = humanizeKey;
   protected query = '';
   protected readonly myClaims = signal<ClaimSummary[]>([]);
   protected readonly claim = signal<ClaimDetail | null>(null);
@@ -101,13 +105,9 @@ export class TrackClaimPage implements OnInit {
       });
   }
 
-  protected openQuestion(claim: ClaimDetail): string | undefined {
-    return claim.infoRequests.find((r) => !r.answeredAt)?.question;
-  }
-
   private refresh(): void {
     const current = this.claim();
-    if (!current || current.status === 'SETTLED' || current.status === 'REJECTED' || this.sending()) return;
+    if (!current || isDecided(current.status) || this.sending()) return;
     this.claims.byNumber(current.claimNumber).subscribe({ next: (claim) => this.claim.set(claim), error: () => {} });
   }
 }

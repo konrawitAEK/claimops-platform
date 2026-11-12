@@ -2,6 +2,10 @@ import type { Routes } from '@angular/router';
 import { AppLayout } from './components/app-layout/app-layout';
 import { homeRedirect, roleGuard } from './core/guards';
 
+/**
+ * Top-level routes. Each feature owns its child routes in `pages/<feature>/<feature>.routes.ts`, loaded on demand,
+ * and its role guard sits here at the mount point.
+ */
 export const routes: Routes = [
   {
     path: '',
@@ -11,23 +15,12 @@ export const routes: Routes = [
       {
         path: 'claim',
         canActivate: [roleGuard('CLAIMANT')],
-        children: [
-          { path: '', pathMatch: 'full', redirectTo: 'new' },
-          {
-            path: 'new',
-            loadComponent: () => import('./pages/submit-claim/submit-claim-page').then((m) => m.SubmitClaimPage),
-          },
-          {
-            path: 'track',
-            loadComponent: () => import('./pages/track-claim/track-claim-page').then((m) => m.TrackClaimPage),
-          },
-        ],
+        loadChildren: () => import('./pages/claimant/claimant.routes').then((m) => m.routes),
       },
       {
         path: 'staff',
         canActivate: [roleGuard('STAFF')],
-        loadComponent: () =>
-          import('./pages/staff-workspace/staff-workspace-page').then((m) => m.StaffWorkspacePage),
+        loadChildren: () => import('./pages/staff/staff.routes').then((m) => m.routes),
       },
     ],
   },

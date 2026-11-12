@@ -5,13 +5,14 @@ import { MAT_DIALOG_DATA, MatDialogModule, type MatDialog, type MatDialogRef } f
 import { MatIconModule } from '@angular/material/icon';
 import { MatProgressBarModule } from '@angular/material/progress-bar';
 import { forkJoin } from 'rxjs';
-import { Alert } from '../../../../components/alert/alert';
-import { StatusChip } from '../../../../components/status-chip/status-chip';
-import { errorText } from '../../../../core/api';
-import { dateTime, money } from '../../../../core/format';
-import { STATUS_LABELS } from '../../../../core/labels';
-import type { AuditEntry, ClaimDetail, ClaimStatus } from '../../../../models';
-import { StaffService } from '../../../../services/staff.service';
+import { Alert } from '../../../../../components/alert/alert';
+import { StatusChip } from '../../../../../components/status-chip/status-chip';
+import { errorText } from '../../../../../core/api';
+import { dateTime, money } from '../../../../../utils/format.util';
+import type { AuditEntry, ClaimDetail } from '../../../../../models';
+import { StaffService } from '../../../../../services/staff.service';
+import { describeAuditEntry } from '../../../../../utils/claim.util';
+import { humanizeKey } from '../../../../../utils/text.util';
 
 export interface ClaimDrawerData {
   claimId: string;
@@ -51,6 +52,8 @@ export class ClaimDrawer implements OnInit {
   private readonly staff = inject(StaffService);
 
   protected readonly money = money;
+  protected readonly labelFor = humanizeKey;
+  protected readonly describe = describeAuditEntry;
   protected readonly when = dateTime;
   protected readonly claim = signal<ClaimDetail | null>(null);
   protected readonly audit = signal<AuditEntry[]>([]);
@@ -69,17 +72,5 @@ export class ClaimDrawer implements OnInit {
         this.loading.set(false);
       },
     });
-  }
-
-  /** "licensePlate" → "License plate". */
-  protected labelFor(key: string): string {
-    const words = key.replace(/([A-Z])/g, ' $1').toLowerCase();
-    return words.charAt(0).toUpperCase() + words.slice(1);
-  }
-
-  protected describe(e: AuditEntry): string {
-    const to = STATUS_LABELS[e.newStatus];
-    if (!e.previousStatus) return `Submitted (${to})`;
-    return `${STATUS_LABELS[e.previousStatus as ClaimStatus]} → ${to}`;
   }
 }

@@ -1,8 +1,8 @@
 import { ChangeDetectionStrategy, Component, computed, input } from '@angular/core';
 import { MatCardModule } from '@angular/material/card';
-import { money } from '../../../../core/format';
-import { MARKETS } from '../../../../core/labels';
-import type { Exposure } from '../../../../models';
+import { money } from '../../../../../utils/format.util';
+import { MARKETS } from '../../../../../core/labels';
+import type { Exposure } from '../../../../../models';
 
 /**
  * Outstanding liability per market, one card per market, with a row per claim type and currency.

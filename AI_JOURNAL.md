@@ -160,6 +160,20 @@ Fill this in at the end. It's the table to bring to the walkthrough.
 - **Outcome:** _(candidate to fill)_
 - **My reasoning:** _(candidate to fill)_
 
+### 12:53: utils folder and per-feature routes
+- **Asked:** *"สร้างเป็น util.modele และสร้าง Routes ขึ้นมาด้วย"* ("make a util module, and create Routes too"). The AI asked what I meant. I chose a `utils/` folder, and pasted my usual pattern: a feature `NgModule` with its own routing module, `const routes: Routes = [...]`.
+- **AI proposed:**
+  - **Kept standalone components** rather than switching to `NgModule` declarations, because my spec asked for Angular v18+ standalone and that is Angular 22's default.
+  - **Copied the shape of my pattern:** each feature declares its own `const routes: Routes` in `pages/claimant/claimant.routes.ts` and `pages/staff/staff.routes.ts`. `app.routes.ts` loads them with `loadChildren` and keeps the `roleGuard` on the mount point.
+  - **Pages regrouped by feature:** `claimant/` holds submit-claim and track-claim; `staff/` holds staff-workspace. URLs are unchanged.
+  - **`utils/`:**
+    - `format.util.ts` (moved from `core/format.ts`)
+    - `text.util.ts` (`humanizeKey`, taken out of the drawer)
+    - `claim.util.ts` (`isDecided`, `openQuestion`, `describeAuditEntry`, taken out of the drawer and the track page)
+  - The production build passes, now with one lazy chunk per feature.
+- **Outcome:** _(candidate to fill. Challenged if I accept standalone routes files instead of NgModules)_
+- **My reasoning:** _(candidate to fill)_
+
 ---
 
 ## What I'd do with more time

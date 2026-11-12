@@ -3,8 +3,8 @@ import { NonNullableFormBuilder, ReactiveFormsModule, Validators } from '@angula
 import { MatButtonModule } from '@angular/material/button';
 import { MAT_DIALOG_DATA, MatDialogModule, MatDialogRef } from '@angular/material/dialog';
 import { MatInputModule } from '@angular/material/input';
-import { money } from '../../../../core/format';
-import type { ClaimSummary } from '../../../../models';
+import { money } from '../../../../../utils/format.util';
+import type { ClaimSummary } from '../../../../../models';
 
 export type DecisionMode = 'info' | 'settle' | 'reject';
 
