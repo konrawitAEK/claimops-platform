@@ -40,6 +40,12 @@ public class ClaimantClaimController {
         return claimService.listOwn(user);
     }
 
+    /** Track a claim by the number the claimant was given on submission. Other claimants' numbers return 404. */
+    @GetMapping("/by-number/{claimNumber}")
+    public ClaimDetail getByNumber(CurrentUser user, @PathVariable String claimNumber) {
+        return claimService.getOwnByNumber(user, claimNumber);
+    }
+
     @GetMapping("/{id}")
     public ClaimDetail get(CurrentUser user, @PathVariable UUID id) {
         return claimService.getOwn(user, id);

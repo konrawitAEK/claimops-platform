@@ -59,7 +59,7 @@ public class ClaimService {
         Currency currency = request.currency() != null ? request.currency() : request.market().getLocalCurrency();
         Claim claim = Claim.submit(nextClaimNumber(request.market(), now), claimant.name(), request.policyNumber(),
                 request.claimType(), request.market(), currency, request.incidentDate(),
-                request.incidentDescription().trim(), request.claimedAmount(), now);
+                request.incidentDescription().trim(), request.incidentDetails(), request.claimedAmount(), now);
         claims.saveAndFlush(claim);
         events.publishEvent(ClaimEvent.of(ClaimEventType.CLAIM_SUBMITTED, claim, null, claimant.name(), now));
         return ClaimDetail.from(claim);
@@ -75,6 +75,14 @@ public class ClaimService {
     @Transactional(readOnly = true)
     public ClaimDetail getOwn(CurrentUser claimant, UUID claimId) {
         return ClaimDetail.from(loadOwned(claimant, claimId));
+    }
+
+    @Transactional(readOnly = true)
+    public ClaimDetail getOwnByNumber(CurrentUser claimant, String claimNumber) {
+        Claim claim = claims.findByClaimNumber(claimNumber.trim().toUpperCase())
+                .filter(c -> c.isOwnedBy(claimant.name()))
+                .orElseThrow(() -> new ResourceNotFoundException("Claim " + claimNumber + " not found"));
+        return ClaimDetail.from(claim);
     }
 
     public ClaimDetail provideInfo(CurrentUser claimant, UUID claimId, String answer) {

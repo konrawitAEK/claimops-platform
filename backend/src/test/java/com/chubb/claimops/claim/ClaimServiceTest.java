@@ -22,6 +22,7 @@ import java.math.BigDecimal;
 import java.time.Clock;
 import java.time.Instant;
 import java.time.LocalDate;
+import java.util.Map;
 import java.time.ZoneOffset;
 import java.util.Optional;
 import java.util.UUID;
@@ -38,6 +39,8 @@ import org.springframework.orm.ObjectOptimisticLockingFailureException;
 class ClaimServiceTest {
 
     private static final Instant NOW = Instant.parse("2026-11-12T05:00:00Z");
+    private static final Map<String, String> MOTOR_DETAILS =
+            Map.of("licensePlate", "SGX1234A", "vehicleModel", "Toyota Corolla");
     private static final CurrentUser ALICE = new CurrentUser("alice", UserRole.CLAIMANT);
     private static final CurrentUser BOB = new CurrentUser("bob", UserRole.STAFF);
     private static final CurrentUser CAROL = new CurrentUser("carol", UserRole.STAFF);
@@ -59,7 +62,7 @@ class ClaimServiceTest {
         when(claims.nextClaimSequence()).thenReturn(42L);
 
         ClaimDetail detail = service.submit(ALICE, new SubmitClaimRequest("POL-1001", ClaimType.MOTOR, Market.TH, null,
-                LocalDate.parse("2026-11-10"), "  Side swipe  ", new BigDecimal("80000.00")));
+                LocalDate.parse("2026-11-10"), "  Side swipe  ", MOTOR_DETAILS, new BigDecimal("80000.00")));
 
         assertThat(detail.claimNumber()).isEqualTo("CLM-TH-2026-000042");
         assertThat(detail.currency()).isEqualTo(Currency.THB);
@@ -102,7 +105,7 @@ class ClaimServiceTest {
 
     private static Claim submittedClaim() {
         return Claim.submit("CLM-SG-2026-000001", "alice", "POL-1001", ClaimType.MOTOR, Market.SG, Currency.SGD,
-                LocalDate.parse("2026-11-10"), "Rear-ended", new BigDecimal("5000.00"), NOW);
+                LocalDate.parse("2026-11-10"), "Rear-ended", MOTOR_DETAILS, new BigDecimal("5000.00"), NOW);
     }
 
     private ClaimEvent capturedEvent() {

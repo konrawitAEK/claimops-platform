@@ -9,6 +9,7 @@ import java.math.BigDecimal;
 import java.time.Instant;
 import java.time.LocalDate;
 import java.util.List;
+import java.util.Map;
 import java.util.UUID;
 
 /**
@@ -17,6 +18,7 @@ import java.util.UUID;
  */
 public record ClaimDetail(UUID id, String claimNumber, String claimantName, String policyNumber, ClaimType claimType,
                           Market market, Currency currency, LocalDate incidentDate, String incidentDescription,
+                          Map<String, String> incidentDetails,
                           BigDecimal claimedAmount, BigDecimal settledAmount, String decisionNote, ClaimStatus status,
                           String assignedHandler, Instant submittedAt, Instant updatedAt, Instant decidedAt,
                           Long version, List<InfoRequestView> infoRequests) {
@@ -24,7 +26,7 @@ public record ClaimDetail(UUID id, String claimNumber, String claimantName, Stri
     public static ClaimDetail from(Claim claim) {
         return new ClaimDetail(claim.getId(), claim.getClaimNumber(), claim.getClaimantName(),
                 claim.getPolicyNumber(), claim.getClaimType(), claim.getMarket(), claim.getCurrency(),
-                claim.getIncidentDate(), claim.getIncidentDescription(), claim.getClaimedAmount(),
+                claim.getIncidentDate(), claim.getIncidentDescription(), claim.getIncidentDetails(), claim.getClaimedAmount(),
                 claim.getSettledAmount(), claim.getDecisionNote(), claim.getStatus(), claim.getAssignedHandler(),
                 claim.getSubmittedAt(), claim.getUpdatedAt(), claim.getDecidedAt(), claim.getVersion(),
                 claim.getInfoRequests().stream().map(InfoRequestView::from).toList());

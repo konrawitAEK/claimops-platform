@@ -6,6 +6,7 @@ import com.chubb.claimops.claim.domain.ClaimType;
 import com.chubb.claimops.claim.domain.Market;
 import java.util.Collection;
 import java.util.List;
+import java.util.Optional;
 import java.util.UUID;
 import org.springframework.data.jpa.repository.JpaRepository;
 import org.springframework.data.jpa.repository.Query;
@@ -14,6 +15,8 @@ import org.springframework.data.repository.query.Param;
 public interface ClaimRepository extends JpaRepository<Claim, UUID> {
 
     List<Claim> findByClaimantNameOrderBySubmittedAtDesc(String claimantName);
+
+    Optional<Claim> findByClaimNumber(String claimNumber);
 
     /** Staff work queue. Each filter is optional: pass {@code null} to ignore it. Oldest claims come first. */
     @Query("""
