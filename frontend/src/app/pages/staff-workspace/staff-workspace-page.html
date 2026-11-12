@@ -82,7 +82,7 @@
           </thead>
           <tbody>
             @for (c of queue(); track c.id) {
-              <tr class="hover" [class.dim]="busyId() === c.id">
+              <tr class="clickable" [class.dim]="busyId() === c.id" (click)="view(c)">
                 <td class="nowrap">{{ c.claimNumber }}</td>
                 <td>{{ c.claimantName }}</td>
                 <td>{{ c.claimType }} · {{ c.market }}</td>
@@ -90,7 +90,8 @@
                 <td><app-status-chip [status]="c.status" /></td>
                 <td>{{ c.assignedHandler ?? '—' }}</td>
                 <td class="nowrap">{{ when(c.submittedAt) }}</td>
-                <td class="right actions">
+                <td class="right actions" (click)="$event.stopPropagation()">
+                  <button mat-button type="button" (click)="view(c)">View</button>
                   @if (c.status === 'SUBMITTED') {
                     <button mat-flat-button type="button" [disabled]="busyId() !== null" (click)="pickUp(c)">
                       Pick up

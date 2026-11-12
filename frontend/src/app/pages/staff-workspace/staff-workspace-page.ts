@@ -15,6 +15,7 @@ import { MARKETS, STATUSES, STATUS_LABELS } from '../../core/labels';
 import type { ClaimDetail, ClaimStatus, ClaimSummary, Dashboard, Market } from '../../models';
 import { SessionService } from '../../services/session.service';
 import { StaffService } from '../../services/staff.service';
+import { openClaimDrawer } from './claim-drawer';
 import { DecisionDialog, type DecisionDialogData, type DecisionMode, type DecisionResult } from './decision-dialog';
 import { ExposureCards } from './exposure-cards';
 
@@ -88,6 +89,11 @@ export class StaffWorkspacePage implements OnInit {
 
   protected isMine(claim: ClaimSummary): boolean {
     return claim.assignedHandler === this.session.identity().name;
+  }
+
+  /** Shows the claim's full details in the side drawer. */
+  protected view(claim: ClaimSummary): void {
+    openClaimDrawer(this.dialog, claim.id);
   }
 
   protected pickUp(claim: ClaimSummary): void {

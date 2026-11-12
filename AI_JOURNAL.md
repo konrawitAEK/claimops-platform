@@ -131,6 +131,18 @@ Fill this in at the end. It's the table to bring to the walkthrough.
 - **Outcome:** _(candidate to fill)_
 - **My reasoning:** _(candidate to fill)_
 
+### 12:40: Claim detail drawer on /staff
+- **Asked:** *"หน้าของ /staff … ควรดูได้ว่ารายการนี้มีรายละเอียดอะไรบ้าง จะทำเป็น pop-up drawer ก็ได้ แต่ต้องทำเป็นไฟล์แยกไว้แล้วค่อยดึงมาใช้"* ("on /staff, officers should be able to see a claim's full details; a pop-up drawer is fine, but put it in its own file and import it").
+- **AI proposed:**
+  - **Component:** `claim-drawer.ts` in `pages/staff-workspace/`, next to `decision-dialog.ts`, opened through an `openClaimDrawer()` helper.
+  - **Built on MatDialog,** pinned to the right at full height, rather than a `mat-sidenav` in the page layout. This reuses the focus trap, Escape and backdrop, and keeps the page template unchanged.
+  - **Data loading:** the drawer loads the claim and its audit trail itself (`forkJoin`), so the queue passes only an id. Added `StaffService.audit()` for the existing `/audit` endpoint.
+  - **Contents:** facts, incident details, the Q&A thread, the decision note, and the audit trail. The audit trail comes from the Kafka read model and can lag a moment.
+  - **Opening it:** click a row or the new View button. The action buttons stop the click from reaching the row.
+- **Verified:** the production build passes, the container was redeployed, and the drawer's two calls return 200 through nginx (5 audit events). **Not verified in a browser** (no browser tool in this session).
+- **Outcome:** _(candidate to fill)_
+- **My reasoning:** _(candidate to fill)_
+
 ---
 
 ## What I'd do with more time

@@ -95,6 +95,7 @@ One Angular 22 app (standalone components, signals, zoneless change detection, A
 - **Staff workspace:** exposure cards per market, workload tiles, and a queue filtered by market, status and "only mine".
   - Pick Up / Request info / Settle / Reject are shown only when the action is legal for that claim.
   - A **409** is shown as a "changed by someone else" warning, and the queue reloads.
+  - Clicking a row opens a **claim drawer** (`claim-drawer.ts`): full details, the Q&A thread, the decision and the audit trail.
 - **Freshness:** pages poll every 10 s. SSE is the upgrade path.
 - **Same origin:** the app calls `/api`. nginx proxies it to the backend, so no CORS setup is needed.
 

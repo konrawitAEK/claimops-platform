@@ -2,7 +2,7 @@ import { HttpClient, HttpParams } from '@angular/common/http';
 import { Injectable, inject } from '@angular/core';
 import type { Observable } from 'rxjs';
 import { API_URL } from '../core/api';
-import type { ClaimDetail, ClaimSummary, Dashboard, QueueFilter } from '../models';
+import type { AuditEntry, ClaimDetail, ClaimSummary, Dashboard, QueueFilter } from '../models';
 
 /** Staff API calls: work queue, claim actions and the dashboard. */
 @Injectable({ providedIn: 'root' })
@@ -20,6 +20,10 @@ export class StaffService {
 
   claim(id: string): Observable<ClaimDetail> {
     return this.http.get<ClaimDetail>(`${this.base}/claims/${id}`);
+  }
+
+  audit(id: string): Observable<AuditEntry[]> {
+    return this.http.get<AuditEntry[]>(`${this.base}/claims/${id}/audit`);
   }
 
   pickUp(id: string): Observable<ClaimDetail> {
