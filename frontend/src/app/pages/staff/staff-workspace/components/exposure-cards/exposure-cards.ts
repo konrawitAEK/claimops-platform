@@ -11,17 +11,17 @@ interface Totals {
   settled: number;
 }
 
+/** One currency's figures: a breakdown (by claim type, or by market for USD) and the total. */
 interface CurrencyBlock extends Totals {
   currency: Currency;
-  /** Per claim type, only types with any activity. */
-  byType: (Totals & { claimType: ClaimType })[];
+  /** Only rows with any activity. */
+  rows: (Totals & { label: string })[];
 }
 
 interface MarketCard {
   code: Market;
   name: string;
-  /** Always the local currency first, then USD, even when empty, so both are visible at a glance. */
-  currencies: CurrencyBlock[];
+  local: CurrencyBlock;
 }
 
 const TYPES: ClaimType[] = ['MOTOR', 'PROPERTY'];
@@ -37,21 +37,28 @@ function totals(rows: Exposure[]): Totals {
   );
 }
 
-function block(rows: Exposure[], currency: Currency): CurrencyBlock {
+function hasActivity(t: Totals): boolean {
+  return t.openClaims > 0 || t.outstanding !== 0 || t.settled !== 0;
+}
+
+/** Figures for `currency`, broken down by whatever `labelOf` groups the rows by. */
+function block(rows: Exposure[], currency: Currency, groups: string[], labelOf: (e: Exposure) => string): CurrencyBlock {
   const inCurrency = rows.filter((r) => r.currency === currency);
   return {
     currency,
     ...totals(inCurrency),
-    byType: TYPES.map((claimType) => ({ claimType, ...totals(inCurrency.filter((r) => r.claimType === claimType)) }))
-      .filter((t) => t.openClaims > 0 || t.outstanding !== 0 || t.settled !== 0),
+    rows: groups
+      .map((label) => ({ label, ...totals(inCurrency.filter((r) => labelOf(r) === label)) }))
+      .filter(hasActivity),
   };
 }
 
 /**
- * Liability per market: outstanding (open claims) and settled (paid out), in the local currency and in USD.
+ * Liability: outstanding (open claims) and settled (paid out).
  *
- * Amounts are only ever added within one currency. USD can therefore also be totalled across all markets (the first
- * card), while local currencies stay per market because the backend does no FX conversion.
+ * Amounts are only ever added within one currency. USD claims, which any market can file, get their own card totalled
+ * across the region and broken down by market. Each market card shows only its local currency, by claim type, since
+ * the backend does no FX conversion.
  */
 @Component({
   selector: 'app-exposure-cards',
@@ -64,13 +71,15 @@ export class ExposureCards {
   readonly exposures = input.required<Exposure[]>();
   protected readonly money = money;
 
-  /** USD across every market: one currency, so a true APAC total. */
-  protected readonly usdTotal = computed(() => block(this.exposures(), 'USD'));
+  /** USD across every market, one row per market: one currency, so a true APAC total. */
+  protected readonly usd = computed(() =>
+    block(this.exposures(), 'USD', MARKETS.map((m) => m.code), (e) => e.market),
+  );
 
   protected readonly byMarket = computed<MarketCard[]>(() =>
     MARKETS.map((m) => {
       const rows = this.exposures().filter((e) => e.market === m.code);
-      return { code: m.code, name: m.name, currencies: [block(rows, m.currency), block(rows, 'USD')] };
+      return { code: m.code, name: m.name, local: block(rows, m.currency, TYPES, (e) => e.claimType) };
     }),
   );
 }

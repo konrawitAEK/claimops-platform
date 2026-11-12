@@ -193,6 +193,15 @@ Fill this in at the end. It's the table to bring to the walkthrough.
   - **Each market card:** shows the local currency **and USD**, each with Open / Outstanding / **Settled**. There is a row per claim type with activity, plus a total row that is always shown, even at zero.
   - **New "USD · all markets" card** at the front. USD is one currency, so it can be totalled across the region. Local currencies stay per market because there is no FX conversion.
 - **Verified:** the build passes and the frontend is redeployed. The dashboard data now includes the settled-only SG rows (SGD 4,200 and USD 4,200) that were hidden before. **Not verified in a browser.**
+- **Outcome:** Overrode (see 13:15: I didn't want USD inside the market cards).
+- **My reasoning:** _(candidate to fill)_
+
+### 13:15: USD only in its own card
+- **Asked:** *"USD อยู่กับ card ตัวเอง ไม่ต้องไปอยู่กับ card สกุลเงินอื่น"* ("USD stays in its own card, not with the other currencies").
+- **AI proposed:**
+  - **USD card:** the only place USD appears. It now has a row per market with USD activity, plus the regional total.
+  - **Market cards:** show only their local currency, by claim type, with Open, Outstanding and Settled.
+  - **Code:** one shared `block()` helper builds both breakdowns (by claim type or by market). The build passes.
 - **Outcome:** _(candidate to fill)_
 - **My reasoning:** _(candidate to fill)_
 
