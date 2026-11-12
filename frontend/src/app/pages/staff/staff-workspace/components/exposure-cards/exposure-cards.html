@@ -1,27 +1,55 @@
 <div class="cards">
+  <mat-card appearance="outlined" class="usd">
+    <div class="card-pad">
+      <div class="spread">
+        <span class="market">USD</span>
+        <span class="caption">All markets</span>
+      </div>
+      <ng-container *ngTemplateOutlet="figures; context: { $implicit: usdTotal() }" />
+    </div>
+  </mat-card>
+
   @for (m of byMarket(); track m.code) {
-    <mat-card appearance="outlined" [class.empty]="!m.rows.length">
+    <mat-card appearance="outlined">
       <div class="card-pad">
         <div class="spread">
           <span class="market">{{ m.code }}</span>
           <span class="caption">{{ m.name }}</span>
         </div>
-        @if (m.rows.length) {
-          <table class="data-table small">
-            <tbody>
-              @for (r of m.rows; track r.claimType + r.currency) {
-                <tr>
-                  <td>{{ r.claimType }}</td>
-                  <td class="right">{{ r.openClaims }} open</td>
-                  <td class="right num strong">{{ money(r.outstandingAmount, r.currency) }}</td>
-                </tr>
-              }
-            </tbody>
-          </table>
-        } @else {
-          <div class="caption none">No open exposure</div>
+        @for (c of m.currencies; track c.currency) {
+          <ng-container *ngTemplateOutlet="figures; context: { $implicit: c }" />
         }
       </div>
     </mat-card>
   }
 </div>
+
+<!-- One currency: totals row, then a row per claim type that has activity. -->
+<ng-template #figures let-c>
+  <table class="data-table small">
+    <thead>
+      <tr>
+        <th>{{ c.currency }}</th>
+        <th class="right">Open</th>
+        <th class="right">Outstanding</th>
+        <th class="right">Settled</th>
+      </tr>
+    </thead>
+    <tbody>
+      @for (t of c.byType; track t.claimType) {
+        <tr>
+          <td class="caption">{{ t.claimType }}</td>
+          <td class="right">{{ t.openClaims }}</td>
+          <td class="right num">{{ money(t.outstanding, c.currency) }}</td>
+          <td class="right num">{{ money(t.settled, c.currency) }}</td>
+        </tr>
+      }
+      <tr class="total" [class.zero]="!c.openClaims && !c.outstanding && !c.settled">
+        <td>Total</td>
+        <td class="right">{{ c.openClaims }}</td>
+        <td class="right num">{{ money(c.outstanding, c.currency) }}</td>
+        <td class="right num settled">{{ money(c.settled, c.currency) }}</td>
+      </tr>
+    </tbody>
+  </table>
+</ng-template>

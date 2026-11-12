@@ -186,6 +186,16 @@ Fill this in at the end. It's the table to bring to the walkthrough.
 - **Outcome:** _(candidate to fill)_
 - **My reasoning:** _(candidate to fill)_
 
+### 13:08: Show USD and settled amounts per market
+- **Asked:** *"Outstanding liability exposure ต้องการเห็นของ USD ด้วย และเพิ่มการแสดงผลของส่วนที่ settled ไปแล้วว่าแต่ละประเทศ settled ไปเท่าไหร่แล้ว"* ("show USD in the exposure too, and show how much each country has already settled").
+- **AI proposed:**
+  - **No backend change was needed.** The read model already carries settled amounts and USD rows. The cards filtered out rows with no open claims, so fully settled business was hidden.
+  - **Each market card:** shows the local currency **and USD**, each with Open / Outstanding / **Settled**. There is a row per claim type with activity, plus a total row that is always shown, even at zero.
+  - **New "USD · all markets" card** at the front. USD is one currency, so it can be totalled across the region. Local currencies stay per market because there is no FX conversion.
+- **Verified:** the build passes and the frontend is redeployed. The dashboard data now includes the settled-only SG rows (SGD 4,200 and USD 4,200) that were hidden before. **Not verified in a browser.**
+- **Outcome:** _(candidate to fill)_
+- **My reasoning:** _(candidate to fill)_
+
 ---
 
 ## What I'd do with more time
