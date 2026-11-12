@@ -105,6 +105,32 @@ Fill this in at the end. It's the table to bring to the walkthrough.
 - **Outcome:** _(candidate to fill)_
 - **My reasoning:** _(candidate to fill)_
 
+### 12:10: Angular frontend (my spec), structured like my previous project
+- **Asked:** My own spec for an Angular 18+ standalone frontend:
+  - a role switcher that sends identity headers through an interceptor, and a `roleGuard`;
+  - claimant submit with MOTOR or PROPERTY detail fields, and track by claim number with a timeline and an inline reply;
+  - a staff workspace with exposure cards, workload, and a queue whose actions handle 409.
+
+  I added: *"พยายามทำตามโครงสร้างที่ฉันเคยทำไปก่อนหน้านี้"* ("follow the structure I used before").
+- **AI proposed:**
+  - **Structure:** mirrored my SwiftQuote Angular app: `components/`, `core/` (interceptor, guards, api, labels), `models/*.model.ts`, `services/*.service.ts`, `pages/<page>/<page>-page.{ts,html,scss}`. Same stack: Angular 22.2.3, Material 3, zoneless signals, nginx image.
+  - **Backend changes the spec needed:**
+    - `incidentDetails` as JSONB, with the required keys on `ClaimType` and checked by the domain (422 if one is missing; unknown keys dropped);
+    - `GET /api/claimant/claims/by-number/{n}`, scoped to the owner (404 otherwise).
+  - **API calls:** the browser calls `/api` and nginx proxies it, rather than calling the backend directly with CORS. No API URL is baked into the build.
+  - **Claimant timeline:** built from the claim detail, not the staff audit endpoint, so internal events stay internal.
+  - **409 handling:** a warning alert ("changed by someone else"), then the queue reloads.
+  - **Freshness:** polling every 10 s rather than SSE, to fit the time box.
+  - **Market selector:** sets the claimant's default market and the staff queue's default filter.
+- **Verified:**
+  - The production build passes with strict templates.
+  - The whole stack runs on :4200.
+  - Through the nginx proxy: submit with `incidentDetails` (unknown key dropped), track by number, another claimant's number gives 404, a missing detail gives 422, and JP exposure appears in JPY.
+  - The 15 backend tests still pass.
+- **Not verified:** the UI has not been opened in a browser. The browser tool was unavailable in this session, so screens, the role switcher and the dialogs are unchecked by eye.
+- **Outcome:** _(candidate to fill)_
+- **My reasoning:** _(candidate to fill)_
+
 ---
 
 ## What I'd do with more time
