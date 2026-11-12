@@ -42,32 +42,7 @@ import type { Exposure } from '../../models';
       }
     </div>
   `,
-  styles: `
-    .cards {
-      display: grid;
-      grid-template-columns: repeat(auto-fill, minmax(260px, 1fr));
-      gap: 12px;
-    }
-    .market {
-      font: var(--mat-sys-title-large);
-      font-weight: 700;
-    }
-    .strong {
-      font-weight: 600;
-    }
-    .none {
-      padding-top: 12px;
-    }
-    .empty {
-      opacity: 0.6;
-    }
-    table.data-table.small td {
-      padding: 6px 0;
-    }
-    td + td {
-      padding-left: 12px !important;
-    }
-  `,
+  styleUrl: './exposure-cards.scss',
 })
 export class ExposureCards {
   readonly exposures = input.required<Exposure[]>();

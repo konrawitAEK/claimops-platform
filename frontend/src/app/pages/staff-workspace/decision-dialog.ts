@@ -59,15 +59,7 @@ const COPY: Record<DecisionMode, { title: string; label: string; action: string;
       </mat-dialog-actions>
     </form>
   `,
-  styles: `
-    mat-dialog-content {
-      min-width: min(420px, 80vw);
-      padding-top: 8px !important;
-    }
-    .danger {
-      background: var(--co-error);
-    }
-  `,
+  styleUrl: './decision-dialog.scss',
 })
 export class DecisionDialog {
   protected readonly data = inject<DecisionDialogData>(MAT_DIALOG_DATA);

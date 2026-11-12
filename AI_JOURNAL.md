@@ -143,6 +143,12 @@ Fill this in at the end. It's the table to bring to the walkthrough.
 - **Outcome:** _(candidate to fill)_
 - **My reasoning:** _(candidate to fill)_
 
+### 12:47: Separate CSS from TypeScript
+- **Asked:** *"ควรแยก css ออกมาจาก ts"* ("CSS should be separated from the TS").
+- **AI proposed:** Moved the inline `styles` of all 7 components into a sibling `<name>.scss` referenced by `styleUrl`: alert, status-chip, app-layout, claim-timeline, exposure-cards, decision-dialog, claim-drawer. No rule changed. Templates stay inline in the small components, as in SwiftQuote; the pages already had separate `.html` and `.scss` files. The production build passes.
+- **Outcome:** _(candidate to fill)_
+- **My reasoning:** _(candidate to fill)_
+
 ---
 
 ## What I'd do with more time

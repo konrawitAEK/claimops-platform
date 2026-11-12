@@ -21,46 +21,7 @@ const ICONS: Record<Severity, string> = {
     <div class="msg"><ng-content /></div>
     <div class="action"><ng-content select="[alertAction]" /></div>
   `,
-  styles: `
-    :host {
-      display: flex;
-      align-items: flex-start;
-      gap: 12px;
-      padding: 6px 16px;
-      border-radius: 8px;
-      font: var(--mat-sys-body-medium);
-      --c: var(--co-info);
-      background: color-mix(in srgb, var(--c) 12%, var(--mat-sys-surface));
-      color: color-mix(in srgb, var(--c) 70%, var(--mat-sys-on-surface));
-    }
-    :host(.sev-error) {
-      --c: var(--co-error);
-    }
-    :host(.sev-warning) {
-      --c: var(--co-warning);
-    }
-    :host(.sev-success) {
-      --c: var(--co-success);
-    }
-    .icon {
-      color: var(--c);
-      padding: 7px 0;
-      font-size: 22px;
-      width: 22px;
-      height: 22px;
-    }
-    .msg {
-      padding: 8px 0;
-      flex: 1;
-      white-space: pre-wrap;
-    }
-    .action {
-      align-self: center;
-    }
-    .action:empty {
-      display: none;
-    }
-  `,
+  styleUrl: './alert.scss',
 })
 export class Alert {
   readonly severity = input<Severity>('info');
