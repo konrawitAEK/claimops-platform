@@ -1,6 +1,6 @@
-# Local stack: PostgreSQL 16, Kafka (KRaft, no ZooKeeper) and the claims backend.
+# Local stack: PostgreSQL 16, Kafka (KRaft, no ZooKeeper), the claims backend and the Angular frontend.
 #   docker compose up --build
-# Backend: http://localhost:8080  ·  Postgres: localhost:5432  ·  Kafka (from the host): localhost:9092
+# App: http://localhost:4200  ·  Backend: http://localhost:8080  ·  Postgres: localhost:5432  ·  Kafka: localhost:9092
 
 services:
   postgres:
@@ -64,6 +64,14 @@ services:
       postgres:
         condition: service_healthy
       kafka:
+        condition: service_healthy
+
+  frontend:
+    build: ./frontend
+    ports:
+      - "4200:80"
+    depends_on:
+      backend:
         condition: service_healthy
 
 volumes:
