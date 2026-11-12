@@ -1,0 +1,14 @@
+{
+  "hooks": {
+    "UserPromptSubmit": [
+      {
+        "hooks": [
+          {
+            "type": "command",
+            "command": "mkdir -p \"$CLAUDE_PROJECT_DIR/docs\" && jq -c '{ts: (now|strftime(\"%Y-%m-%dT%H:%M:%SZ\")), session: .session_id, prompt: .prompt}' >> \"$CLAUDE_PROJECT_DIR/docs/ai-prompts.jsonl\""
+          }
+        ]
+      }
+    ]
+  }
+}
