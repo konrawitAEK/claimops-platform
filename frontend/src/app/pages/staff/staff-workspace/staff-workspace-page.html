@@ -18,7 +18,7 @@
 
   @if (dashboard(); as d) {
     <section class="stack">
-      <h2 class="section-title">Team workload</h2>
+      <h2 class="section-title">Team workload and performance</h2>
       <div class="workload">
         @for (s of statuses; track s) {
           <div class="tile">
@@ -27,13 +27,33 @@
           </div>
         }
       </div>
-      @if (d.workload.openByHandler.length) {
-        <div class="row caption">
-          Open claims by officer:
-          @for (h of d.workload.openByHandler; track h.handler) {
-            <span class="handler">{{ h.handler }} · {{ h.openClaims }}</span>
-          }
-        </div>
+      @if (d.workload.performance.length) {
+        <mat-card appearance="outlined">
+          <div class="table-wrap">
+            <table class="data-table small">
+              <thead>
+                <tr>
+                  <th>Officer</th>
+                  <th class="right">Open</th>
+                  <th class="right">Settled</th>
+                  <th class="right">Rejected</th>
+                  <th class="right">Avg. time to decision</th>
+                </tr>
+              </thead>
+              <tbody>
+                @for (p of d.workload.performance; track p.handler) {
+                  <tr [class.me]="p.handler === session.identity().name">
+                    <td>{{ p.handler }}</td>
+                    <td class="right">{{ p.openClaims }}</td>
+                    <td class="right">{{ p.settled }}</td>
+                    <td class="right">{{ p.rejected }}</td>
+                    <td class="right">{{ duration(p.avgHoursToDecision) }}</td>
+                  </tr>
+                }
+              </tbody>
+            </table>
+          </div>
+        </mat-card>
       }
     </section>
   }

@@ -14,6 +14,7 @@ A running log of what I asked the AI, what I accepted, challenged or overrode, a
 | 11:57 | 12:06 | 0:09 | Backend unit tests, trimmed to 15 essentials |
 | 12:06 | 13:22 | 1:16 | Angular frontend: structure, claim drawer, utils and routes, auto-refresh, exposure cards, policy auto-fill |
 | 13:22 | 13:35 | 0:13 | README run and reset commands, journal update |
+| 14:08 | 14:17 | 0:09 | Team performance metrics, OpenAPI / Swagger, architecture doc update |
 
 ## Key decisions at a glance
 
@@ -231,8 +232,34 @@ Fill this in at the end. It's the table to bring to the walkthrough.
 - **Outcome:** _(candidate to fill)_
 - **My reasoning:** _(candidate to fill)_
 
+### 14:08: Scope for the remaining time
+- **Asked:** I asked the AI what it would add next. It proposed six items in priority order:
+  1. team performance metrics;
+  2. OpenAPI / Swagger;
+  3. an architecture doc update;
+  4. a transactional outbox;
+  5. Testcontainers integration tests;
+  6. a handler-set reserve.
+
+  I chose: *"ทำข้อ 1-3 และ 4-6 เก็บไว้ว่าถ้ามีเวลาเยอะกว่านี้สิ่งที่จะทำเพิ่ม"* ("do 1–3, and keep 4–6 as what I'd do with more time").
+- **AI proposed:**
+  - **Performance:** `GET /api/staff/dashboard` now returns per-officer `performance`: open, settled and rejected counts, and the average hours from **submission** to decision (the claimant's wait). It is a native SQL aggregate; JPQL has no portable interval arithmetic. The staff workspace shows it as a table, with the current officer in bold.
+  - **Contract:** springdoc generates OpenAPI from the controllers and records, code-first, so the backend owns the contract and it can't drift. Swagger UI is at `/swagger-ui.html`, with the identity headers as API-key schemes; `CurrentUser` is hidden from the parameter list. Generating the Angular models from the spec is left as the next step.
+  - **Docs:** `ARCHITECTURE.md` now covers the USD card, the auto-filled policy number, auto-refresh on identity change, performance and the API contract.
+- **Verified:**
+  - The 15 backend tests pass and the frontend build passes; both containers are redeployed.
+  - The live dashboard returns performance for bob (1 settled, 1 rejected) and carol (1 settled).
+  - `/v3/api-docs` lists 12 paths, and Swagger UI returns 200.
+  - **The UI is not verified in a browser.**
+- **Outcome:** Accepted (items 1–3 as proposed; 4–6 recorded below).
+- **My reasoning:** _(candidate to fill)_
+
 ---
 
 ## What I'd do with more time
 
-<!-- Fill this in at the end. It's a 10-minute segment of the walkthrough. -->
+<!-- Items 1–3 were chosen at 14:08; add your own below. It's a 10-minute segment of the walkthrough. -->
+
+1. **Transactional outbox.** Today an event is published after commit, so a crash between the commit and the Kafka send loses the event and the exposure read model drifts. I would write each event to an `outbox` table in the same transaction as the claim change, and have a relay publish it and mark it sent. Delivery becomes at-least-once from the database, and the idempotent consumer already absorbs duplicates.
+2. **Integration tests with Testcontainers.** Concurrent pickup (409) and duplicate-event handling are proven today with mocks and by hand against the running stack. I would add `@SpringBootTest` tests on real Postgres and Kafka: two threads pick up the same claim, and a re-produced event leaves exposure unchanged.
+3. **Handler-set reserve.** Exposure currently uses the claimed amount, which is what the customer asked for, not what the insurer expects to pay. I would let the assigned officer set and revise a reserve with a reason, publish `RESERVE_CHANGED` events, and base outstanding exposure on the reserve.

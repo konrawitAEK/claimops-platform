@@ -19,8 +19,10 @@ import java.time.Instant;
 import java.time.Year;
 import java.time.ZoneOffset;
 import java.util.EnumMap;
+import java.util.HashMap;
 import java.util.List;
 import java.util.Map;
+import java.util.TreeMap;
 import java.util.UUID;
 import java.util.function.Consumer;
 import org.springframework.context.ApplicationEventPublisher;
@@ -133,7 +135,22 @@ public class ClaimService {
         List<WorkloadView.HandlerLoad> byHandler = claims.countOpenByHandler(ClaimStatus.OPEN).stream()
                 .map(row -> new WorkloadView.HandlerLoad(row.getHandler(), row.getCount()))
                 .toList();
-        return new WorkloadView(byStatus, byHandler);
+        return new WorkloadView(byStatus, byHandler, performance(byHandler));
+    }
+
+    /** Joins open workload with decisions, so an officer with only open claims, or only decided ones, still appears. */
+    private List<WorkloadView.HandlerPerformance> performance(List<WorkloadView.HandlerLoad> open) {
+        Map<String, Long> openByHandler = new HashMap<>();
+        open.forEach(load -> openByHandler.put(load.handler(), load.openClaims()));
+        Map<String, WorkloadView.HandlerPerformance> rows = new TreeMap<>();
+        for (ClaimRepository.HandlerDecisions d : claims.decisionsByHandler()) {
+            rows.put(d.getHandler(), new WorkloadView.HandlerPerformance(d.getHandler(),
+                    openByHandler.getOrDefault(d.getHandler(), 0L), d.getSettled(), d.getRejected(),
+                    d.getAvgHoursToDecision()));
+        }
+        openByHandler.forEach((handler, count) ->
+                rows.putIfAbsent(handler, new WorkloadView.HandlerPerformance(handler, count, 0, 0, null)));
+        return List.copyOf(rows.values());
     }
 
     // ---- Internals ------------------------------------------------------------------------------------------

@@ -10,7 +10,7 @@ import { finalize, type Observable } from 'rxjs';
 import { Alert, type Severity } from '../../../components/alert/alert';
 import { StatusChip } from '../../../components/status-chip/status-chip';
 import { errorText, problemOf, statusOf } from '../../../core/api';
-import { dateTime, money } from '../../../utils/format.util';
+import { dateTime, duration, money } from '../../../utils/format.util';
 import { MARKETS, STATUSES, STATUS_LABELS } from '../../../core/labels';
 import type { ClaimDetail, ClaimStatus, ClaimSummary, Dashboard, Market } from '../../../models';
 import { SessionService } from '../../../services/session.service';
@@ -58,6 +58,7 @@ export class StaffWorkspacePage {
   protected readonly statusLabels = STATUS_LABELS;
   protected readonly money = money;
   protected readonly when = dateTime;
+  protected readonly duration = duration;
 
   protected readonly dashboard = signal<Dashboard | null>(null);
   protected readonly queue = signal<ClaimSummary[]>([]);
