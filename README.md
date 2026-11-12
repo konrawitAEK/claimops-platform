@@ -31,11 +31,10 @@ The unit tests need no Docker, database or Kafka; JDK 21 is the only requirement
 
 | Test | What it proves |
 |---|---|
-| `ClaimStateMachineTest` | Every operation is tried from every status (25 cases). Each succeeds only from its one legal source status. Otherwise it throws `InvalidStateTransitionException` and leaves the claim unchanged. |
-| `ClaimTest` | Business rules: currency per market, settlement cap, owner and assignee checks. |
-| `ClaimServiceTest` (Mockito) | A concurrent pickup loses with `ObjectOptimisticLockingFailureException` and publishes no event. Each command raises the right Kafka event. |
-| `StaffClaimControllerTest` (`@WebMvcTest`) | An optimistic-lock failure becomes **409** Problem Details, as do invalid transitions. Also covers 401, 403 and 400 with field errors. |
-| `ExposureProjectorTest` | Exposure goes up on `CLAIM_SUBMITTED` and down on settle or reject. A redelivered `eventId` is ignored. Currencies are never summed together. |
+| `ClaimTest` (7) | Lifecycle and business rules: the valid path; settling a `SUBMITTED` claim and changing a `REJECTED` one both fail; no takeover of a claim waiting for the claimant (regression); only the assignee may decide; settlement cap; currency rule. |
+| `ClaimServiceTest` (2, Mockito) | A concurrent pickup loses with `ObjectOptimisticLockingFailureException` and publishes no event. Submitting raises `CLAIM_SUBMITTED`. |
+| `StaffClaimControllerTest` (2, `@WebMvcTest`) | An optimistic-lock failure becomes **409** Problem Details. A claimant calling a staff endpoint gets 403. |
+| `ExposureProjectorTest` (4) | Exposure goes up on `CLAIM_SUBMITTED` and down on settle or reject. A redelivered `eventId` is ignored. |
 
 Thai versions of the docs, for my own preparation: [README.th.md](README.th.md) and [docs/ARCHITECTURE.th.md](docs/ARCHITECTURE.th.md).
 

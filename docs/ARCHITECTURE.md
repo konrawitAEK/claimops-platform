@@ -26,7 +26,7 @@ SUBMITTED ──▶ IN_REVIEW ──▶ SETTLED
 ```
 
 - **Transition table:** `ClaimStatus.allowedNext()` holds all the transitions in one place. `Claim` checks it before every change and has no setters, so no code path can skip it.
-- **One source status per operation:** pick-up only from `SUBMITTED`, and answering only from `INFO_REQUESTED`, even though both lead to `IN_REVIEW`. The table alone would let an officer take over a claim that is waiting for the claimant. The exhaustive test caught this.
+- **One source status per operation:** pick-up only from `SUBMITTED`, and answering only from `INFO_REQUESTED`, even though both lead to `IN_REVIEW`. The table alone would let an officer take over a claim that is waiting for the claimant. An exhaustive state-machine test caught this; a regression test now covers it.
 - **Who may act:**
   - Any staff member can pick up a `SUBMITTED` claim, and becomes its assigned handler.
   - Only the assigned handler can request information, settle or reject.

@@ -3,7 +3,6 @@ package com.chubb.claimops.claim;
 import static org.assertj.core.api.Assertions.assertThat;
 import static org.assertj.core.api.Assertions.assertThatThrownBy;
 import static org.mockito.ArgumentMatchers.any;
-import static org.mockito.Mockito.never;
 import static org.mockito.Mockito.times;
 import static org.mockito.Mockito.verify;
 import static org.mockito.Mockito.when;
@@ -19,7 +18,6 @@ import com.chubb.claimops.claim.web.dto.ClaimDetail;
 import com.chubb.claimops.claim.web.dto.SubmitClaimRequest;
 import com.chubb.claimops.common.auth.CurrentUser;
 import com.chubb.claimops.common.auth.UserRole;
-import com.chubb.claimops.common.error.ResourceNotFoundException;
 import java.math.BigDecimal;
 import java.time.Clock;
 import java.time.Instant;
@@ -98,53 +96,9 @@ class ClaimServiceTest {
         assertThat(capturedEvent().actor()).isEqualTo("bob");
     }
 
-    @Test
-    void pickUpRaisesStatusChangedFromSubmitted() {
-        UUID id = UUID.randomUUID();
-        Claim claim = submittedClaim();
-        when(claims.findById(id)).thenReturn(Optional.of(claim));
 
-        service.pickUp(BOB, id);
 
-        ClaimEvent event = capturedEvent();
-        assertThat(event.type()).isEqualTo(ClaimEventType.CLAIM_STATUS_CHANGED);
-        assertThat(event.previousStatus()).isEqualTo(ClaimStatus.SUBMITTED);
-        assertThat(event.newStatus()).isEqualTo(ClaimStatus.IN_REVIEW);
-    }
 
-    @Test
-    void settleRaisesClaimDecidedWithTheSettledAmount() {
-        UUID id = UUID.randomUUID();
-        Claim claim = submittedClaim();
-        claim.pickUp("bob", NOW);
-        when(claims.findById(id)).thenReturn(Optional.of(claim));
-
-        service.settle(BOB, id, new BigDecimal("3000.00"), "Agreed");
-
-        ClaimEvent event = capturedEvent();
-        assertThat(event.type()).isEqualTo(ClaimEventType.CLAIM_DECIDED);
-        assertThat(event.newStatus()).isEqualTo(ClaimStatus.SETTLED);
-        assertThat(event.settledAmount()).isEqualByComparingTo("3000.00");
-    }
-
-    @Test
-    void aClaimantCannotSeeSomeoneElsesClaim() {
-        UUID id = UUID.randomUUID();
-        when(claims.findById(id)).thenReturn(Optional.of(submittedClaim()));
-
-        assertThatThrownBy(() -> service.getOwn(new CurrentUser("mallory", UserRole.CLAIMANT), id))
-                .isInstanceOf(ResourceNotFoundException.class);
-    }
-
-    @Test
-    void aFailedDomainRuleSavesAndPublishesNothing() {
-        UUID id = UUID.randomUUID();
-        when(claims.findById(id)).thenReturn(Optional.of(submittedClaim()));
-
-        assertThatThrownBy(() -> service.reject(BOB, id, "Not covered")).isInstanceOf(RuntimeException.class);
-        verify(claims, never()).saveAndFlush(any());
-        verify(events, never()).publishEvent(any(Object.class));
-    }
 
     private static Claim submittedClaim() {
         return Claim.submit("CLM-SG-2026-000001", "alice", "POL-1001", ClaimType.MOTOR, Market.SG, Currency.SGD,

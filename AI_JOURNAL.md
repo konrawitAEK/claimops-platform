@@ -94,6 +94,17 @@ Fill this in at the end. It's the table to bring to the walkthrough.
 - **Outcome:** _(candidate to fill: Accepted, or Overrode if I want the main docs in Thai)_
 - **My reasoning:** _(candidate to fill)_
 
+### 12:06: Cut the test suite to essentials
+- **Asked:** *"test case มีจำนวนเยอะเกินไปรึป่าว เหลือไว้เท่าที่จำเป็นสำคัญๆ ก่อน"* ("Aren't there too many test cases? Keep only the essential ones for now.")
+- **AI proposed:** Cut 63 tests to 15, keeping one test per rule that matters:
+  - **ClaimTest (7):** the valid lifecycle; settling a `SUBMITTED` claim fails; a `REJECTED` claim is final; a regression test for the takeover bug; only the assignee may decide; the settlement cap; the currency rule.
+  - **ClaimServiceTest (2):** a concurrent pickup loses with an optimistic-lock failure and publishes no event; submitting raises `CLAIM_SUBMITTED`.
+  - **StaffClaimControllerTest (2):** a lock failure maps to 409; a claimant calling a staff endpoint gets 403.
+  - **ExposureProjectorTest (4):** exposure up on submit, down on settle and on reject; a duplicate event is ignored.
+  - **Dropped:** the 25-case exhaustive state-machine matrix, which had already caught the takeover bug that the regression test now pins. Also dropped the separate transition-table test and the secondary 400/401, currency-summing and audit-only cases.
+- **Outcome:** _(candidate to fill)_
+- **My reasoning:** _(candidate to fill)_
+
 ---
 
 ## What I'd do with more time

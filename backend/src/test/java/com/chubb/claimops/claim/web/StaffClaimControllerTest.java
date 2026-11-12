@@ -12,7 +12,6 @@ import com.chubb.claimops.claim.ClaimService;
 import com.chubb.claimops.claim.domain.Claim;
 import com.chubb.claimops.common.auth.CurrentUserArgumentResolver;
 import com.chubb.claimops.common.auth.HeaderAuthInterceptor;
-import com.chubb.claimops.common.error.InvalidStateTransitionException;
 import java.util.UUID;
 import org.junit.jupiter.api.Test;
 import org.springframework.beans.factory.annotation.Autowired;
@@ -51,24 +50,7 @@ class StaffClaimControllerTest {
                 .andExpect(jsonPath("$.status").value(409));
     }
 
-    @Test
-    void anInvalidTransitionBecomes409() throws Exception {
-        UUID id = UUID.randomUUID();
-        when(claimService.pickUp(any(), eq(id)))
-                .thenThrow(new InvalidStateTransitionException("Claim X cannot move from IN_REVIEW to IN_REVIEW"));
 
-        mvc.perform(post("/api/staff/claims/{id}/pickup", id)
-                        .header("X-User-Role", "STAFF")
-                        .header("X-User-Name", "carol"))
-                .andExpect(status().isConflict())
-                .andExpect(jsonPath("$.title").value("Invalid status transition"));
-    }
-
-    @Test
-    void missingIdentityHeadersBecome401() throws Exception {
-        mvc.perform(post("/api/staff/claims/{id}/pickup", UUID.randomUUID()))
-                .andExpect(status().isUnauthorized());
-    }
 
     @Test
     void aClaimantCallingAStaffEndpointBecomes403() throws Exception {
@@ -78,14 +60,4 @@ class StaffClaimControllerTest {
                 .andExpect(status().isForbidden());
     }
 
-    @Test
-    void anInvalidSettlementBodyBecomes400WithFieldErrors() throws Exception {
-        mvc.perform(post("/api/staff/claims/{id}/settlement", UUID.randomUUID())
-                        .header("X-User-Role", "STAFF")
-                        .header("X-User-Name", "bob")
-                        .contentType(MediaType.APPLICATION_JSON)
-                        .content("{\"settledAmount\": -5}"))
-                .andExpect(status().isBadRequest())
-                .andExpect(jsonPath("$.errors.settledAmount").exists());
-    }
 }

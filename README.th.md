@@ -34,11 +34,10 @@ cd backend && ./mvnw test
 
 | ไฟล์เทสต์ | สิ่งที่พิสูจน์ |
 |---|---|
-| `ClaimStateMachineTest` | ลองทุกคำสั่งจากทุกสถานะ (25 กรณี) แต่ละคำสั่งต้องทำได้จากสถานะต้นทางที่ถูกต้องเพียงสถานะเดียว ถ้าทำจากสถานะอื่นต้องได้ `InvalidStateTransitionException` และเคลมต้องไม่เปลี่ยนแปลง |
-| `ClaimTest` | กติกาธุรกิจ: สกุลเงินที่แต่ละประเทศใช้ได้, settle ห้ามเกินยอดที่ขอ, เช็กว่าเป็นเจ้าของเคลมหรือเป็นคนที่รับงานไว้ |
-| `ClaimServiceTest` (Mockito) | เจ้าหน้าที่ 2 คนกดรับงานพร้อมกัน คนที่ช้ากว่าได้ `ObjectOptimisticLockingFailureException` และระบบไม่ส่ง event ออกไป |
-| `StaffClaimControllerTest` (`@WebMvcTest`) | ความผิดพลาดจาก optimistic lock กลายเป็น **409** ในรูปแบบ Problem Details รวมถึงเคส 401, 403 และ 400 |
-| `ExposureProjectorTest` | ยอด exposure เพิ่มเมื่อมี `CLAIM_SUBMITTED` และลดเมื่อ settle หรือ reject ถ้า event ที่มี `eventId` เดิมถูกส่งซ้ำ ระบบไม่นับซ้ำ และไม่เอาเงินต่างสกุลมาบวกกัน |
+| `ClaimTest` (7) | flow ปกติตั้งแต่ยื่นจน settle, settle เคลมที่ยัง `SUBMITTED` หรือแก้เคลมที่ `REJECTED` แล้วไม่ได้, เจ้าหน้าที่อีกคนแย่งงานที่รอลูกค้าตอบไม่ได้ (บั๊กที่เคยเจอ), คนที่รับงานเท่านั้นตัดสินได้, settle ห้ามเกินยอดที่ขอ, สกุลเงินต้องเป็นของประเทศนั้นหรือ USD |
+| `ClaimServiceTest` (2, Mockito) | เจ้าหน้าที่ 2 คนกดรับงานพร้อมกัน คนที่ช้ากว่าได้ `ObjectOptimisticLockingFailureException` และระบบไม่ส่ง event / ยื่นเคลมแล้วมี `CLAIM_SUBMITTED` |
+| `StaffClaimControllerTest` (2, `@WebMvcTest`) | ความผิดพลาดจาก optimistic lock กลายเป็น **409** / ลูกค้าเรียก API ของเจ้าหน้าที่ได้ 403 |
+| `ExposureProjectorTest` (4) | ยอด exposure เพิ่มตอนยื่นเคลม และลดตอน settle หรือ reject / ถ้า `eventId` เดิมถูกส่งซ้ำ ระบบไม่นับซ้ำ |
 
 ## API
 
