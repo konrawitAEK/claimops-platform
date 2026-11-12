@@ -205,6 +205,16 @@ Fill this in at the end. It's the table to bring to the walkthrough.
 - **Outcome:** _(candidate to fill)_
 - **My reasoning:** _(candidate to fill)_
 
+### 13:20: Policy number filled in for the claimant
+- **Asked:** *"policy number ควร run ขึ้นมาให้ลูกค้าเอง กันงง"* ("the policy number should be generated for the customer, to avoid confusion").
+- **AI proposed:**
+  - **Pushed back on a fresh number per claim.** A policy exists before the claim, and a claim only references it, so a new number every time would point to no policy at all.
+  - **Instead:** the field is filled automatically and read-only. `utils/policy.util.ts` derives the claimant's policy deterministically from claimant, market and claim type (e.g. `POL-SG-MOT-482915`): the same inputs always give the same policy. It updates when the type, market or claimant changes.
+  - **Labelled as a stand-in:** documented as a substitute for a policy administration lookup, which is out of scope.
+- **Verified:** the build passes and the frontend is redeployed. **Not verified in a browser.**
+- **Outcome:** _(candidate to fill)_
+- **My reasoning:** _(candidate to fill)_
+
 ---
 
 ## What I'd do with more time

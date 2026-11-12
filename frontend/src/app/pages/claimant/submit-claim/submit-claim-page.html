@@ -23,10 +23,8 @@
         <div class="grid">
           <mat-form-field>
             <mat-label>Policy number</mat-label>
-            <input matInput formControlName="policyNumber" autocomplete="off" />
-            @if (form.controls.policyNumber.hasError('pattern')) {
-              <mat-error>4–32 letters, digits or dashes</mat-error>
-            }
+            <input matInput formControlName="policyNumber" readonly />
+            <mat-hint>Your {{ claimType() === 'MOTOR' ? 'motor' : 'property' }} policy in {{ market() }}</mat-hint>
           </mat-form-field>
           <mat-form-field>
             <mat-label>Incident date</mat-label>

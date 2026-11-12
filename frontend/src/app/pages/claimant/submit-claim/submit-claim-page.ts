@@ -11,6 +11,7 @@ import { finalize } from 'rxjs';
 import { Alert } from '../../../components/alert/alert';
 import { errorText } from '../../../core/api';
 import { money } from '../../../utils/format.util';
+import { demoPolicyNumber } from '../../../utils/policy.util';
 import { CLAIM_TYPES, DAMAGE_CATEGORIES, MARKETS, localCurrency } from '../../../core/labels';
 import type { ClaimDetail, ClaimType, Currency, Market } from '../../../models';
 import { ClaimantService } from '../../../services/claimant.service';
@@ -62,7 +63,8 @@ export class SubmitClaimPage {
     claimType: this.fb.control<ClaimType>('MOTOR'),
     market: this.fb.control<Market>(this.session.identity().market),
     currency: this.fb.control<Currency>(localCurrency(this.session.identity().market)),
-    policyNumber: ['', [Validators.required, Validators.pattern(/^[A-Za-z0-9-]{4,32}$/)]],
+    // Filled in from the claimant's policy for the chosen market and type (see syncPolicy); not typed by hand.
+    policyNumber: [{ value: '', disabled: true }, Validators.required],
     incidentDate: [this.today, Validators.required],
     incidentDescription: ['', [Validators.required, Validators.maxLength(2000)]],
     claimedAmount: this.fb.control<number | null>(null, [Validators.required, Validators.min(0.01)]),
@@ -92,17 +94,23 @@ export class SubmitClaimPage {
         this.form.controls.market.setValue(market);
         this.submitted.set(null);
         this.error.set(null);
+        this.syncPolicy();
       });
     });
     const destroyRef = inject(DestroyRef);
     // A new claim type brings a new set of required detail fields.
     this.form.controls.claimType.valueChanges
       .pipe(takeUntilDestroyed(destroyRef))
-      .subscribe((type) => this.form.setControl('incidentDetails', this.detailsFor(type)));
+      .subscribe((type) => {
+        this.form.setControl('incidentDetails', this.detailsFor(type));
+        this.syncPolicy();
+      });
     // Changing market resets a local currency to the new market's; USD stays USD.
     this.form.controls.market.valueChanges.pipe(takeUntilDestroyed(destroyRef)).subscribe((market) => {
       if (this.form.controls.currency.value !== 'USD') this.form.controls.currency.setValue(localCurrency(market));
+      this.syncPolicy();
     });
+    this.syncPolicy();
   }
 
   protected currencies(): Currency[] {
@@ -133,6 +141,7 @@ export class SubmitClaimPage {
         next: (claim) => {
           this.submitted.set(claim);
           this.form.reset();
+          this.syncPolicy();
         },
         error: (err: unknown) => this.error.set(errorText(err, 'Could not submit the claim')),
       });
@@ -140,6 +149,12 @@ export class SubmitClaimPage {
 
   protected newClaim(): void {
     this.submitted.set(null);
+  }
+
+  /** Looks up the claimant's policy for the current market and claim type. */
+  private syncPolicy(): void {
+    const { market, claimType } = this.form.getRawValue();
+    this.form.controls.policyNumber.setValue(demoPolicyNumber(this.session.identity().name, market, claimType));
   }
 
   private detailsFor(type: ClaimType): DetailsGroup {
