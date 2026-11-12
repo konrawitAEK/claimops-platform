@@ -2,7 +2,7 @@
 
 Claims platform for Chubb APAC: claimants submit motor and property claims and track them; claims staff review, assess and settle or reject them.
 
-Status: **backend implemented** (`backend/`). The Angular frontend hasn't been started yet.
+Status: **backend** (`backend/`) and **Angular frontend** (`frontend/`) implemented. Both run with `docker compose up --build`.
 
 > The first design (see the 11:17 journal entry) was revised at the start of the build (11:32 entry): the `APPROVED` status was dropped, JWT was replaced by header-based identity, and the module and topic names changed. This document describes what is built.
 
@@ -12,6 +12,7 @@ Status: **backend implemented** (`backend/`). The Angular frontend hasn't been s
 |---|---|
 | **Claim** | The aggregate root. Holds type (`MOTOR` / `PROPERTY`), market, currency, incident date and description, claimed and settled amounts, assigned handler, status and an optimistic-lock `version`. |
 | **InfoRequest** | A handler's question to the claimant and the claimant's answer. It belongs to the Claim aggregate and changes only through it. |
+| **Incident details** | Type-specific fields stored as JSONB: `licensePlate` and `vehicleModel` for MOTOR, `propertyAddress` and `damageCategory` for PROPERTY. The required keys live on `ClaimType`, so adding a field changes the enum and the form, not the schema. |
 | **ClaimEvent** | Kafka payload (`chubb.claims.events`). It carries a snapshot, so consumers never read the claim tables. |
 
 **Markets and currencies:** SG, TH, MY, HK, AU and JP. A claim is filed in the market's local currency (the default) or in USD. Amounts are never converted between currencies.
@@ -82,9 +83,20 @@ Role boundaries are enforced by path: `/api/claimant/**` is for claimants and `/
 - Lombok `@Getter` on entities (no setters)
 - `docker compose up --build` starts everything
 
-## Frontend (not started)
+## Frontend
 
-One Angular app with lazy-loaded, role-guarded `claimant/` and `staff/` areas. Claim status will be refreshed by polling.
+One Angular 22 app (standalone components, signals, zoneless change detection, Angular Material) serves both user types.
+
+- **Identity:** a top-bar switcher picks the role, user and market. `identityInterceptor` sends the role and user as `X-User-Role` / `X-User-Name` on API calls only.
+- **Routes:** `roleGuard` protects `/claim/*` (claimant) and `/staff`. Each page is lazy-loaded.
+- **Claimant pages:**
+  - **Submit:** a reactive form whose detail fields switch with the claim type, plus a currency choice of local or USD.
+  - **Track:** look a claim up by number. Shows a status chip and a timeline built from the claim, with a reply form only while the claim is `INFO_REQUESTED`.
+- **Staff workspace:** exposure cards per market, workload tiles, and a queue filtered by market, status and "only mine".
+  - Pick Up / Request info / Settle / Reject are shown only when the action is legal for that claim.
+  - A **409** is shown as a "changed by someone else" warning, and the queue reloads.
+- **Freshness:** pages poll every 10 s. SSE is the upgrade path.
+- **Same origin:** the app calls `/api`. nginx proxies it to the backend, so no CORS setup is needed.
 
 ## Out of scope
 

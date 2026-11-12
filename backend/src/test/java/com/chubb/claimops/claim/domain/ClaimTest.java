@@ -9,6 +9,7 @@ import com.chubb.claimops.common.error.InvalidStateTransitionException;
 import java.math.BigDecimal;
 import java.time.Instant;
 import java.time.LocalDate;
+import java.util.Map;
 import org.junit.jupiter.api.DisplayName;
 import org.junit.jupiter.api.Test;
 
@@ -16,10 +17,12 @@ import org.junit.jupiter.api.Test;
 class ClaimTest {
 
     private static final Instant NOW = Instant.parse("2026-11-12T05:00:00Z");
+    private static final Map<String, String> MOTOR_DETAILS =
+            Map.of("licensePlate", "SGX1234A", "vehicleModel", "Toyota Corolla");
 
     private static Claim newClaim() {
         return Claim.submit("CLM-SG-2026-000001", "alice", "POL-123", ClaimType.MOTOR, Market.SG, Currency.SGD,
-                LocalDate.parse("2026-11-10"), "Rear-ended at a junction", new BigDecimal("5000.00"), NOW);
+                LocalDate.parse("2026-11-10"), "Rear-ended at a junction", MOTOR_DETAILS, new BigDecimal("5000.00"), NOW);
     }
 
     @Test
@@ -91,7 +94,7 @@ class ClaimTest {
     @Test
     void aClaimMustBeInTheMarketsCurrencyOrUsd() {
         assertThatThrownBy(() -> Claim.submit("CLM-SG-2026-000002", "alice", "POL-123", ClaimType.MOTOR, Market.SG,
-                Currency.THB, LocalDate.parse("2026-11-10"), "Wrong currency", new BigDecimal("1.00"), NOW))
+                Currency.THB, LocalDate.parse("2026-11-10"), "Wrong currency", MOTOR_DETAILS, new BigDecimal("1.00"), NOW))
                 .isInstanceOf(BusinessRuleViolationException.class);
     }
 }

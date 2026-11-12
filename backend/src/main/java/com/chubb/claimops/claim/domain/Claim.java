@@ -19,12 +19,16 @@ import java.time.LocalDate;
 import java.time.ZoneOffset;
 import java.util.ArrayList;
 import java.util.Collections;
+import java.util.LinkedHashMap;
 import java.util.List;
+import java.util.Map;
 import java.util.Optional;
 import java.util.UUID;
 import lombok.AccessLevel;
 import lombok.Getter;
 import lombok.NoArgsConstructor;
+import org.hibernate.annotations.JdbcTypeCode;
+import org.hibernate.type.SqlTypes;
 
 /**
  * The claim aggregate root. Every status change goes through a method on this class, which checks the
@@ -79,6 +83,12 @@ public class Claim {
     @Column(name = "incident_description", nullable = false, length = 2000)
     private String incidentDescription;
 
+    /** Type-specific fields, e.g. licence plate for MOTOR. Stored as JSONB; required keys come from {@link ClaimType}. */
+    @Getter(AccessLevel.NONE)
+    @JdbcTypeCode(SqlTypes.JSON)
+    @Column(name = "incident_details", nullable = false, columnDefinition = "jsonb")
+    private Map<String, String> incidentDetails = new LinkedHashMap<>();
+
     @Column(name = "claimed_amount", nullable = false, precision = 15, scale = 2)
     private BigDecimal claimedAmount;
 
@@ -114,8 +124,8 @@ public class Claim {
     private List<InfoRequest> infoRequests = new ArrayList<>();
 
     private Claim(String claimNumber, String claimantName, String policyNumber, ClaimType claimType, Market market,
-                  Currency currency, LocalDate incidentDate, String incidentDescription, BigDecimal claimedAmount,
-                  Instant now) {
+                  Currency currency, LocalDate incidentDate, String incidentDescription,
+                  Map<String, String> incidentDetails, BigDecimal claimedAmount, Instant now) {
         this.id = UUID.randomUUID();
         this.claimNumber = claimNumber;
         this.claimantName = claimantName;
@@ -125,6 +135,7 @@ public class Claim {
         this.currency = currency;
         this.incidentDate = incidentDate;
         this.incidentDescription = incidentDescription;
+        this.incidentDetails = new LinkedHashMap<>(incidentDetails);
         this.claimedAmount = claimedAmount;
         this.status = ClaimStatus.SUBMITTED;
         this.submittedAt = now;
@@ -134,11 +145,13 @@ public class Claim {
     /**
      * Creates a new claim in {@link ClaimStatus#SUBMITTED}.
      *
-     * @param currency the claim currency, which must be the market's local currency or USD
+     * @param currency        the claim currency, which must be the market's local currency or USD
+     * @param incidentDetails type-specific fields; every key in {@link ClaimType#requiredDetails()} must be non-blank,
+     *                        and keys not listed there are dropped
      */
     public static Claim submit(String claimNumber, String claimantName, String policyNumber, ClaimType claimType,
                                Market market, Currency currency, LocalDate incidentDate, String incidentDescription,
-                               BigDecimal claimedAmount, Instant now) {
+                               Map<String, String> incidentDetails, BigDecimal claimedAmount, Instant now) {
         if (!market.accepts(currency)) {
             throw new BusinessRuleViolationException("Claims in " + market + " must be in "
                     + market.getLocalCurrency() + " or " + Currency.USD + ", not " + currency);
@@ -147,8 +160,16 @@ public class Claim {
             // One day of slack covers markets ahead of UTC (e.g. JP, AU), where "today" is already tomorrow in UTC.
             throw new BusinessRuleViolationException("Incident date cannot be in the future");
         }
+        Map<String, String> details = new LinkedHashMap<>();
+        for (String key : claimType.requiredDetails()) {
+            String value = incidentDetails == null ? null : incidentDetails.get(key);
+            if (value == null || value.isBlank()) {
+                throw new BusinessRuleViolationException(claimType + " claims require incidentDetails." + key);
+            }
+            details.put(key, value.trim());
+        }
         return new Claim(claimNumber, claimantName, policyNumber, claimType, market, currency, incidentDate,
-                incidentDescription, claimedAmount, now);
+                incidentDescription, details, claimedAmount, now);
     }
 
     /** A staff member takes ownership of a submitted claim and starts the review. */
@@ -256,6 +277,10 @@ public class Claim {
         if (!isOwnedBy(claimant)) {
             throw new ForbiddenOperationException("Claim " + claimNumber + " does not belong to " + claimant);
         }
+    }
+
+    public Map<String, String> getIncidentDetails() {
+        return Collections.unmodifiableMap(incidentDetails);
     }
 
     /** Read-only view, so information requests can only be added through {@link #requestInfo}. */

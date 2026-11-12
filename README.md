@@ -15,11 +15,26 @@ docker compose up --build
 
 | Service | Address |
 |---|---|
+| App (Angular) | http://localhost:4200. Use the top bar to switch between Claimant and Staff view, user and market. |
 | Backend | http://localhost:8080 (health check: `/actuator/health`) |
 | PostgreSQL | `localhost:5432`, database, user and password all `claimops` |
 | Kafka | `localhost:9092` from the host |
 
 To reset all data, run `docker compose down -v`.
+
+## Frontend
+
+The Angular 22 app (standalone components, signals, Angular Material) lives in `frontend/`:
+
+| Folder | Contents |
+|---|---|
+| `components/` | Shared pieces: app layout with the role switcher, alert, status chip |
+| `core/` | `identity.interceptor.ts` (adds `X-User-Role` / `X-User-Name`), `guards.ts` (`roleGuard`), API URL and error text, labels |
+| `models/` | One `*.model.ts` per area, mirroring the backend DTOs |
+| `services/` | `session`, `claimant` and `staff` API services |
+| `pages/` | One folder per page: `submit-claim`, `track-claim`, `staff-workspace` |
+
+Calls go to the relative path `/api`. nginx (in Docker) or the dev-server proxy (`ng serve`) forwards them to the backend, so there is no CORS setup and no URL baked into the build. Running it outside Docker needs Node 22.22.3 or later: `cd frontend && npm install && npm start`.
 
 ## Test
 
@@ -47,7 +62,8 @@ Errors are returned as RFC 9457 Problem Details.
 
 | Method | Path | Who | Purpose |
 |---|---|---|---|
-| POST | `/api/claimant/claims` | Claimant | Submit a claim. `currency` is optional: local currency by default, or `USD`. |
+| POST | `/api/claimant/claims` | Claimant | Submit a claim. `currency` is optional: local currency by default, or `USD`. `incidentDetails` must hold `licensePlate` and `vehicleModel` for MOTOR, or `propertyAddress` and `damageCategory` for PROPERTY. |
+| GET | `/api/claimant/claims/by-number/{claimNumber}` | Claimant | Track a claim by its number (only the caller's own) |
 | GET | `/api/claimant/claims` | Claimant | List my claims |
 | GET | `/api/claimant/claims/{id}` | Claimant | Claim detail, including information requests |
 | POST | `/api/claimant/claims/{id}/info-responses` | Claimant | Answer the open information request |
